@@ -1,0 +1,12 @@
+body,div,dl,dt,dd,
+ul,ol,h1,h2,h3,h4,h5,h6,
+pre,form,fieldset,legend,input,textarea
+{
+    margin: 0;
+    padding: 0;;
+}
+body{text-align: center;}
+li{list-style: none;}
+a{text-decoration: none;}
+input,button,img{border: none;}
+.active{color:#409EFF;}
