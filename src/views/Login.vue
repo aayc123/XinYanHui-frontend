@@ -24,7 +24,7 @@
                 <!-- 注册表单 -->
                 <el-form :model="registerForm" :rules="rules" ref="registerForm" status-icon label-width="90px">
                     <el-form-item label="用户名" prop="username">
-                        <el-input type="text" v-model="registerForm.username" placeholder="只能输入数字或字母，长度不少于4位"/>
+                        <el-input type="text" v-model="registerForm.username" placeholder="只能输入中文、数字或字母"/>
                     </el-form-item>
                     <el-form-item label="邮箱" prop="email">
                         <el-input type="text" v-model="registerForm.email"/>
@@ -59,75 +59,7 @@
     </div>
 </template>
 
-<style scoped lang="less">
 
-.login{
-    margin: 0 auto;
-    .left {
-        top: 0;
-        left: 0;
-        width: 50%;
-        height: 100vh;
-        z-index: -1;
-    }
-    .right{
-        width: 50%;
-        background-color: #fff;
-        height: 100vh;
-    }
-    .left {
-        float: left;
-    }
-    .right{
-        float:right;
-    }
-    .box-card{
-        width: 80%;
-        margin: 100px auto;
-    }
-    .choice{
-        margin-left: 160px;
-        margin-top:40px;
-        display: table;
-        .btn1{
-            width: 200px;
-            height:40px;
-            background-color:#293ce7;
-            color: white;
-            border:none;
-            border-radius: 25px;
-            margin-right: 30px;
-            display: table-cell;
-        }
-        .btn2{
-            width: 200px;
-            height:40px;
-            background-color:#293ce7;
-            color: white;
-            border:none;
-            border-radius: 25px;
-            margin-right: 20px;
-            display: table-cell;
-        }
-    }
-}
-
-.btn{
-            padding: 0 30px;
-            height:40px;
-            background-color:#293ce7;
-            color: white;
-            border:none;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .btn:hover{
-            background-color: #5263f4;
-        }
-
-</style>
 
 <script src="three.r134.min.js"></script>
 <script src="vanta.birds.min.js"></script>
@@ -149,14 +81,16 @@ export default {
     data() {
         // 用户名验证规则
         var validateUserName = (rule, value, callback) => {
-            const reg = /^[a-zA-Z0-9]+$/; // 只允许字母和数字
-            if (value === '') {
-                callback(new Error('请输入用户名'));
-            } else if (value.length < 4) {
-                callback(new Error('用户名长度不少于4位'));
-            }  else {
-                callback();
-            }
+        const reg = /^[\u4e00-\u9fa5a-zA-Z0-9]+$/; // 允许中文、英文和数字
+        if (value === '') {
+            callback(new Error('请输入用户名'));
+        } else if (value.length <1) {
+            callback(new Error('用户名长度不少于1位'));
+        } else if (!reg.test(value)) {
+            callback(new Error('用户名只能包含中文、英文或数字'));
+        } else {
+            callback();
+        }
         };
 
         // 密码验证规则
@@ -166,7 +100,9 @@ export default {
                 callback(new Error('请输入密码'));
             } else if (value.length < 6) {
                 callback(new Error('密码长度不少于6位'));
-            } else {
+            } else if (!reg.test(value)) {
+                callback(new Error('格式错误'));
+            }else {
                 callback();
             }
         };
@@ -293,22 +229,13 @@ export default {
                         console.log(this.registerForm);
                         this.$axios.post(dstway2,this.registerForm)
                         .then(response => {
-                        
                         console.log(response);
                         if(response.data.code==="1"){
                             console.log('Response data:', response.data);
-                           // 登录成功逻辑
-                            const user = response.data.data; // 获取用户数据
-                            const userId=user.userId;
-                            const username=user.username;
-                            localStorage.setItem('LoginState', 'true'); // 设置登录状态
-                            this.$store.dispatch('setUserInfo', { userId, username });
-                            localStorage.setItem('userId', userId);
-                            localStorage.setItem('username', username);
-                            console.log('Username:',user.username);
-                            //alert(user.username);
-                            // 跳转到首页
-                            this.$router.push('/');
+                            alert('注册成功，请登录！');
+                            this.clearRegisterForm(); // 清空注册表单数据
+                            this.$router.push('/login'); // 跳转到登录页面
+                            this.switchToLogin(); // 切换到登录表单
                         }
                         else{
                             alert(response.data.msg); // 显示后端返回的错误消息
@@ -328,8 +255,89 @@ export default {
         },
         handleTabsClick(tab){
             this.activeTab=tab.name;
+        },
+        clearRegisterForm() {
+            // 清空注册表单数据
+            this.registerForm = {
+            username: "",
+            password: "",
+            phone: "",
+            email: "",
+            confirmPassword: ""
+            };
         }
     }
 }
 </script>
+
+
+<style scoped lang="less">
+
+.login{
+    margin: 0 auto;
+    .left {
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100vh;
+        z-index: -1;
+    }
+    .right{
+        width: 50%;
+        background-color: #fff;
+        height: 100vh;
+    }
+    .left {
+        float: left;
+    }
+    .right{
+        float:right;
+    }
+    .box-card{
+        width: 80%;
+        margin: 100px auto;
+    }
+    .choice{
+        margin-left: 160px;
+        margin-top:40px;
+        display: table;
+        .btn1{
+            width: 200px;
+            height:40px;
+            background-color:#293ce7;
+            color: white;
+            border:none;
+            border-radius: 25px;
+            margin-right: 30px;
+            display: table-cell;
+        }
+        .btn2{
+            width: 200px;
+            height:40px;
+            background-color:#293ce7;
+            color: white;
+            border:none;
+            border-radius: 25px;
+            margin-right: 20px;
+            display: table-cell;
+        }
+    }
+}
+
+.btn{
+            padding: 0 30px;
+            height:40px;
+            background-color:#293ce7;
+            color: white;
+            border:none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn:hover{
+            background-color: #5263f4;
+        }
+
+</style>
 
