@@ -18,18 +18,18 @@
           <el-table-column label="操作" width="80">
             <template slot-scope="scope">
               <el-button 
-                v-if="scope.row.status === 'ready'" 
+                v-if="scope.row.status === 'available'" 
                 type="text" 
-                @click="startConsultation(scope.row)"
+                @click="createConsultation(scope.row)"
                 :disabled="!isAppointmentActive(scope.row)">
-                开始咨询
+                预约
               </el-button>
-              <el-button
-                v-if="scope.row.status === 'booked'"
+              <el-div
+                v-if="scope.row.status === 'busy'"
                 type="text"
-                @click="cancelAppointment(scope.row.appointmentId)">
-                取消预约
-              </el-button>
+                >
+                无法预约
+              </el-div>
             </template>
           </el-table-column>
         </el-table>
@@ -75,21 +75,39 @@ export default {
       this.formattedConsultants = Object.keys(data).map(key => {
         return {
           time: key === "-999999999-01-01T00:00" ? "现在在线" : key, // 替换特殊键
-          status: data[key] === "AVAILABLE" ? "ready" : "booked", // 设置状态
+          status: data[key] === "AVAILABLE" ? "available" : "busy", // 设置状态
         };
       });
     },
-   // startConsultation(row) {
-      //console.log("开始咨询", row);
-      // 处理开始咨询逻辑
-    //},
-    //cancelAppointment(appointmentId) {
-      //console.log("取消预约", appointmentId);
-      // 处理取消预约逻辑
-    //},
+    createConsultation(row) {
+      // 构造预约对象
+      const appointment = {
+        userId:parseInt(localStorage.getItem('userId'),10) , // 用户ID
+        consultantId: this.consultantId, 
+        appointmentDate: row.time.substring(0,10), // 预约时间
+        appointmentTime: row.time.substring(11,16)
+      };
+      alert(row.time.substring(11,15));
+      // 调用后端接口提交预约
+      this.$axios.post('/user/book', appointment)
+        .then(response => {
+          if (response.data.code === "1") {
+            alert('预约成功！');
+            this.$message.success('预约成功！');
+            // 刷新数据以更新状态
+            this.fetchConsultantDetails();
+          } else {
+            this.$message.error('预约失败：' + response.data.message);
+          }
+        })
+        .catch(error => {
+          this.$message.error('预约失败，请稍后重试');
+          alert('预约请求错误:', error);
+        });
+    },
     isAppointmentActive(row) {
       // 判断是否可以激活预约
-      return row.status === "ready";
+      return row.status === "available";
     },
   },
 };

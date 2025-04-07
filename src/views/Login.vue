@@ -213,7 +213,7 @@ export default {
                                 localStorage.setItem('username', username);
                                 //console.log('Username:',user.username);
                                 // 跳转到首页
-                                this.$router.push('/');
+                                this.$router.push('/home');
                             }
                             else{
                                 alert(response.data.msg); // 显示后端返回的错误消息
