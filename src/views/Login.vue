@@ -306,7 +306,7 @@ export default {
                             localStorage.setItem('userId', userId);
                             localStorage.setItem('username', username);
                             console.log('Username:',user.username);
-                            alert(user.username);
+                            //alert(user.username);
                             // 跳转到首页
                             this.$router.push('/');
                         }

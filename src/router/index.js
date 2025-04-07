@@ -25,9 +25,9 @@ const routes=[
         ]
     },
     {
-        path: "/consultantHome",
+        path: "/userHome",
         name: "Personal",
-        component: () => import("../views/consultantHome.vue"), // 加载主组件
+        component: () => import("../views/userHome.vue"), // 加载主组件
         children: [
           {
             path: 'schedule', // 我的咨询

@@ -22,7 +22,7 @@
     },
     methods: {
       handleSelect(index) {
-        this.$router.push({ path: `/consultantHome/${index}` });
+        this.$router.push({ path: `/userHome/${index}` });
       }
     }
   };

@@ -4,24 +4,19 @@
       <div class="conseler">
         <!-- 类别选择区域 -->
         <div class="category-selector">
-          <span class="label">类别</span>
-          <ul class="selected-list">
-            <li 
-            v-for="(item, index) in categories" 
-            :key="index" 
-            @click="handleCommand(item.command)" 
-            :class="{ 'active': item.active }"
-            >
-              <a :href="item.href">{{ item.label }}</a>
-            </li>
-          </ul>
+          <div class="date-selector">
+            <span v-for="date in dateOptions" :key="date" @click="onDateClick(date)" 
+                  :class="['date-item', { 'selected': selectedDate === date }]" 
+                  style="cursor:pointer;">
+                {{ date }}
+            </span>
+        </div>
         </div>
         <el-card class="Consultant">
         <div>
           <h2 style="text-align: left; margin-top: 0px;">在线咨询师列表</h2>
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
-        
           <el-row :gutter="20">
             <el-col :span="12" v-for="consultant in consultants" :key="consultant.consultantId" 
             @click.native="goToConsultant(consultant.consultantId, consultant.name)">
@@ -117,35 +112,40 @@ export default {
   data() {
     return {
       userId: localStorage.getItem('userId'), 
+      selectedDate: '', // 当前选中的日期
+      dateOptions: [], // 七天的日期列表
       consultants: [],
       tableData: [],
       filters: {
         startDate: null,
         endDate: null,
         status: null
-      },
-      categories: [
-        { label: '全部类别', command: 'a', active: true },
-        { label: '个人成长', command: 'b', active: false},
-        { label: '情绪管理', command: 'c', active: false},
-        { label: '心理健康', command: 'd', active: false },
-        { label: '婚姻家庭', command: 'e',active: false },
-        { label: '恋爱心理', command: 'f',active: false  },
-        { label: '人际管理', command: 'g',active: false },
-        { label: '职场心理', command: 'h',active: false },
-        { label: '亲子教育', command: 'i', active: false},
-        { label: '性心理', command: 'j', active: false }
-      ]
+      }
     };
   },
   mounted() { 
-    this.fetchConsultants();
+    this.generateDateOptions();
+    this.selectedDate = this.dateOptions[0]; 
+    this.fetchConsultants(this.dateOptions[0]);
     this.fetchAppointments();
   },
   methods: {
-    async fetchConsultants() {
+    async generateDateOptions() {
+      
+      const today = new Date(); // 固定为题目中的日期
+      for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          
+          this.dateOptions.push(this.formatDate(date));
+      }
+      //alert('Generated dateOptions:', this.dateOptions);
+    },
+    async fetchConsultants(availableDate) {
       try {
-        this.$axios.get('/user/consultantlist').then(res => {
+        this.$axios.get('/user/consultantlist',{
+        params:{availableDate:availableDate},
+        }).then(res => {
           if (res.data.code === "1") { // 根据你的后端接口实际结构调整
             this.consultants = res.data.data
           } else {
@@ -159,16 +159,16 @@ export default {
     },
     async fetchAppointments() {
       try {
+        //alert(this.userId);
         this.$axios.get('/user/appointments', {
           params:{userId:parseInt(this.userId, 10)},
           }).then(response=>{
           if (response.data.code !== "1") {
-            alert('获取预约数据失败：' + response.data.message);
+            //alert('获取预约数据失败：' + response.data.message);
             return;
           } 
           // 获取原始数据
         let rawData = response.data.data;
-
         // 过滤掉 appointmentDate 早于今天的记录
         const today = new Date().toISOString().split('T')[0]; // 获取今天的日期（格式：YYYY-MM-DD）
         this.tableData = rawData.filter(item => {
@@ -176,17 +176,27 @@ export default {
         });
         });
       } catch (error) {
-        this.$message.error('获取预约数据失败，请检查网络')
+        this.$message.error('获取预约数据失败')
       }
     },
-
+    formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
     // 时间格式化
     formatDateTime(date, time) {
       if (!date || !time) return '未知时间';
       return this.$moment(`${date} ${time}`).format('YYYY-MM-DD HH:mm');
     },
 
-
+    onDateClick(selectedDate) {
+      if (this.selectedDate !== selectedDate) {
+          this.selectedDate = selectedDate;
+          this.fetchConsultants(selectedDate);
+      }
+    },
     // 状态标签样式
     statusTagType(status) {
       const map = {
@@ -277,6 +287,20 @@ export default {
   border-radius: 20px;
   background-color: transparent;
   border-color: #5c3317;
+}
+.date-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.date-item {
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+}
+.date-item.selected {
+    background-color: #293ce7;
+    color: white;
 }
 .category-selector {
   display: flex;
