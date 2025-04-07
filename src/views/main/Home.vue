@@ -16,8 +16,12 @@
             </li>
           </ul>
         </div>
-
         <el-card class="Consultant">
+        <div>
+          <h2 style="text-align: left; margin-top: 0px;">在线咨询师列表</h2>
+          <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
+        </div>
+        
           <el-row :gutter="20">
             <el-col :span="12" v-for="consultant in consultants" :key="consultant.consultantId" 
             @click.native="goToConsultant(consultant.consultantId, consultant.name)">
@@ -36,35 +40,27 @@
       <div class="right">
         <!-- 使用一个包裹容器来确保子元素垂直排列 -->
         <div class="content-wrapper">
+          
           <div class="latest-meeting">
             <el-card style="border-color: #7a3b10; --el-card-border-color: #7a3b10;">
               <div slot="header" class="clearfix" style="background: #8B4513; border-radius: 4px; padding: 10px 20px;">
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
-              <el-table :data="tableData.filter(item => item.status !== 'completed')" style="width: 100%" header-row-class-name="custom-header">
+              <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%" header-row-class-name="custom-header">
                 <!-- 合并预约日期和时间 -->
                 <el-table-column label="预约时间" width="180">
                   <template slot-scope="scope">
                     {{ scope.row.appointmentDate }}   {{ scope.row.appointmentTime }}   
-                      <!-- 2025-01-01 10:00 -->
+                    
                   </template>
                 </el-table-column>
 
                 <!-- 咨询师信息 -->
                 <el-table-column label="咨询师" width="120">
                   <template slot-scope="scope">
-                    {{ scope.row.consultantId }}
+                    {{ scope.row.consultantName }}
                   </template>
                 </el-table-column>
-
-                <!-- 状态显示 -->
-                <!-- <el-table-column label="状态" width="100">
-                  <template slot-scope="scope">
-                    <el-tag :type="statusTagType(scope.row.status)">
-                      {{ scope.row.status | statusText }}
-                    </el-tag>
-                  </template>
-                </el-table-column> -->
 
                 <!-- 操作按钮 -->
                 <el-table-column label="状态" width="80">
@@ -88,17 +84,19 @@
             </el-card>
           </div>
           <div class="rili">
-            <calendar />
+            <!-- <calendar /> -->
+            <MySchedule/>
           </div>
         </div>
       </div>
     </el-container>
-    <el-footer></el-footer>
+  
   </el-container>
 </template>
 
 <script>
-import calendar from '../../components/calendar.vue';
+//import calendar from '../../components/calendar.vue';
+import MySchedule from '../../components/MySchedule.vue';
 
 export default {
   filters: {
@@ -113,7 +111,8 @@ export default {
     }
   },
   components: {
-    calendar // 注册组件
+    //calendar // 注册组件
+    MySchedule
   },
   data() {
     return {
@@ -167,7 +166,14 @@ export default {
             alert('获取预约数据失败：' + response.data.message);
             return;
           } 
-          this.tableData = response.data.data
+          // 获取原始数据
+        let rawData = response.data.data;
+
+        // 过滤掉 appointmentDate 早于今天的记录
+        const today = new Date().toISOString().split('T')[0]; // 获取今天的日期（格式：YYYY-MM-DD）
+        this.tableData = rawData.filter(item => {
+          return item.appointmentDate >= today; // 只保留 appointmentDate 大于等于今天的记录
+        });
         });
       } catch (error) {
         this.$message.error('获取预约数据失败，请检查网络')
@@ -222,7 +228,11 @@ export default {
 
   // 取消预约
   cancelAppointment(appointmentId) {
-    this.$axios.delete(`/appointments/${appointmentId}`).then(() => {
+    //alert(appointmentId);
+    this.$axios.post('/user/cancel', {
+          appointmentId:parseInt(appointmentId, 10),
+          cancellationReason: '用户主动取消预约',
+        }).then(() => {
       this.$message.success('预约已取消');
       this.fetchAppointments(); // 刷新数据
     }).catch(() => {
@@ -266,6 +276,7 @@ export default {
   margin-top: 30px;
   border-radius: 20px;
   background-color: transparent;
+  border-color: #5c3317;
 }
 .category-selector {
   display: flex;
@@ -346,8 +357,8 @@ export default {
   border-radius: 20px;
   height: auto; /* 确保高度自适应 */
   min-height: 300px; /* 最小高度 */
+  margin-top:10px;
+  
 }
-.rili{
-  height:80px;
-}
+
 </style>

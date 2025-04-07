@@ -12,7 +12,7 @@
             <el-menu-item index="/cinema">AI对话</el-menu-item>
             <el-menu-item index="/myfilm">阅读天地</el-menu-item>
             <el-menu-item class="user">
-                <span>{{User}}</span>
+                <span @click="personalbar()">{{User}}</span>
                 <el-button @click="LogoutHeadle()" >退出</el-button>
             </el-menu-item>
         </el-menu>
@@ -81,6 +81,9 @@ export default {
                 localStorage.removeItem('userId');
                 // 重定向到登录页面
                 this.$router.push({ name: 'Login' });
+            },
+            personalbar(){
+                this.$router.push({ name: 'Personal' });
             }
     }
 

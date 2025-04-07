@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Layout from '../views/Layout.vue'
 import VueRouter from 'vue-router'
 import ConsultantDetail from "@/components/ConsultantDetail.vue"; 
-
+import MySchedule from '../components/MySchedule.vue';
 
 
 Vue.use(VueRouter)
@@ -24,6 +24,23 @@ const routes=[
             },
         ]
     },
+    {
+        path: "/consultantHome",
+        name: "Personal",
+        component: () => import("../views/consultantHome.vue"), // 加载主组件
+        children: [
+          {
+            path: 'schedule', // 我的咨询
+            name: 'Schedule',
+            component:MySchedule,
+            //redirect:'/consultantHome/schedule',
+            // meta: {
+            //     isLogin: true
+            // }
+          },
+        ],
+      },
+
     {
         path:'/login',
         name:'Login',
