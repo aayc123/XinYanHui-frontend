@@ -92,12 +92,12 @@ export default {
       this.$axios.post('/user/book', appointment)
         .then(response => {
           if (response.data.code === "1") {
-            alert('预约成功！');
+            //alert('预约成功！');
             this.$message.success('预约成功！');
             // 刷新数据以更新状态
             this.fetchConsultantDetails();
           } else {
-            this.$message.error('预约失败：' + response.data.message);
+            this.$message.error('预约失败：' + response.data.msg);
           }
         })
         .catch(error => {

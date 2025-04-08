@@ -27,6 +27,7 @@ export default {
   },
   mounted(){
     this.handleMenuChange('schedule')
+    this.$router.replace({ path: '/userHome/schedule' }) // 默认加载日程
   },
   methods: {
     handleMenuChange(tab) {
@@ -50,6 +51,7 @@ export default {
 
 .main-content {
   margin-left: 180px; /* 为侧边栏留出空间 */
+  margin-top:80px;
   padding: 20px;
   width: calc(100% - 180px);
   overflow-y: auto;

@@ -70,7 +70,7 @@
                     <el-button
                       v-if="scope.row.status === 'booked'"
                       type="text"
-                      @click="cancelAppointment(scope.row.appointmentId)">
+                      @click="openCancelModal(scope.row.appointmentId)">
                       取消预约
                     </el-button>
                   </template>
@@ -78,12 +78,19 @@
               </el-table>
             </el-card>
           </div>
+          <div v-if="showLeaveModal" class="modal">
+            <h3>取消预约</h3>
+            <textarea v-model="leaveReason" placeholder="请填写取消理由"></textarea>
+            <button @click="submitCancel">提交</button>
+            <button @click="closeCancelModal">取消</button>
+          </div>
+        </div>
           <div class="rili">
             <!-- <calendar /> -->
             <MySchedule/>
           </div>
         </div>
-      </div>
+    
     </el-container>
   
   </el-container>
@@ -112,6 +119,9 @@ export default {
   data() {
     return {
       userId: localStorage.getItem('userId'), 
+      showLeaveModal: false, // 控制模态框显示
+      leaveReason: "", // 用户填写的取消理由
+      currentAppointmentId: null, // 当前要取消的预约 ID
       selectedDate: '', // 当前选中的日期
       dateOptions: [], // 七天的日期列表
       consultants: [],
@@ -236,19 +246,39 @@ export default {
       });
     },
 
-  // 取消预约
-  cancelAppointment(appointmentId) {
-    alert(appointmentId);
-    this.$axios.post('/user/cancel', {
-          appointmentId:parseInt(appointmentId, 10),
-          cancellationReason: '用户主动取消预约',
-        }).then(() => {
-      this.$message.success('预约已取消');
-      this.fetchAppointments(); // 刷新数据
-    }).catch(() => {
-      this.$message.error('取消预约失败，请稍后重试');
-    });
-  },
+     
+    cancelAppointment(appointmentId, cancellationReason) {
+      this.$axios
+        .post("/user/cancel", {
+          appointmentId: parseInt(appointmentId, 10),
+          cancellationReason: cancellationReason,
+        })
+        .then(() => {
+          this.$message.success("预约已取消");
+          this.fetchAppointments(); // 刷新数据
+        })
+        .catch(() => {
+          this.$message.error("取消预约失败，请稍后重试");
+        });
+    },
+    openCancelModal(appointmentId) {
+      this.currentAppointmentId = appointmentId; // 设置当前预约 ID
+      this.showLeaveModal = true; // 显示模态框
+    },
+    closeCancelModal() {
+      this.showLeaveModal = false; // 关闭模态框
+      this.leaveReason = ""; // 清空取消理由
+      this.currentAppointmentId = null; // 清空当前预约 ID
+    },
+    submitCancel() {
+      if (!this.leaveReason.trim()) {
+        alert("请填写取消理由");
+        return;
+      }
+      this.cancelAppointment(this.currentAppointmentId, this.leaveReason); // 提交取消请求
+      this.closeCancelModal(); // 关闭模态框
+    },
+  
   goToConsultant(id, name) {
     this.$router.push({
       path: `/consultant/${id}`,
@@ -384,5 +414,31 @@ export default {
   margin-top:10px;
   
 }
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border: 1px solid #ccc;
+  z-index: 1000;
+}
 
+.modal textarea {
+  width: 100%;
+  height: 100px;
+  margin-bottom: 10px;
+  padding: 5px;
+  border: 1px solid #ccc;
+}
+
+.modal button {
+  margin-right: 10px;
+  padding: 5px 10px;
+  background-color: #8B4513;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
 </style>
