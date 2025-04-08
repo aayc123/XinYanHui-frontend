@@ -238,7 +238,7 @@ export default {
 
   // 取消预约
   cancelAppointment(appointmentId) {
-    //alert(appointmentId);
+    alert(appointmentId);
     this.$axios.post('/user/cancel', {
           appointmentId:parseInt(appointmentId, 10),
           cancellationReason: '用户主动取消预约',

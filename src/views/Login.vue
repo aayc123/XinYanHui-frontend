@@ -19,6 +19,7 @@
                         <!-- <el-button type="primary" @click="jump">提交</el-button> -->
                     </el-form-item>
                 </el-form>
+                <div @click="switchToRegister" class="remind">没有账号？点此注册</div>
             </div>
             <div v-else-if="activeTab === 'register'" style="margin-top:230px; width:80%">
                 <!-- 注册表单 -->
@@ -40,6 +41,7 @@
                     </el-form-item>
                     <el-form-item>
                         <el-button class="btn" @click="submitForm('registerForm')">提交</el-button>
+                        <div @click="switchToLogin" class="remind2">已有账号？点此登录</div>
                         <!-- <el-button type="primary" @click="submitForm('registerForm')">提交</el-button> -->
                     </el-form-item>
                 </el-form>
@@ -238,12 +240,12 @@ export default {
                             this.switchToLogin(); // 切换到登录表单
                         }
                         else{
-                            alert(response.data.msg); // 显示后端返回的错误消息
+                            alert('用户名重复！请重新注册'); // 显示后端返回的错误消息
                         }
                         })
                         .catch(error => {
                             // 请求失败时的处理逻辑
-                            alert('注册失败!');
+                            alert('注册失败!请检查网络连接');
                         });
 
                     }
@@ -321,23 +323,49 @@ export default {
             margin-right: 20px;
             display: table-cell;
         }
+        .btn1:hover{
+            background-color: #5263f4;
+        }
+        .btn2:hover{
+            background-color: #5263f4;
+        }
     }
 }
 
 .btn{
-            padding: 0 30px;
-            height:40px;
-            background-color:#293ce7;
-            color: white;
-            border:none;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-        }
+    padding: 0 30px;
+    height:40px;
+    background-color:#293ce7;
+    color: white;
+    border:none;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
 
-        .btn:hover{
-            background-color: #5263f4;
-        }
+.btn:hover{
+    background-color: #5263f4;
+}
+.remind{
+    justify-content: center;
+    display:flex;
+    color:#999;
+    margin-left: 90px;
+    font-size: 14px;
+}
+.remind:hover{
+    color: #333;
+    cursor: pointer;
+}
+.remind2{
+    justify-content: center;
+    display:flex;
+    color:#999;
+}
+.remind2:hover{
+    color: #333;
+    cursor: pointer;
+}
 
 </style>
 

@@ -87,7 +87,7 @@ export default {
         appointmentDate: row.time.substring(0,10), // 预约时间
         appointmentTime: row.time.substring(11,16)
       };
-      alert(row.time.substring(11,15));
+      //alert(row.time.substring(11,15));
       // 调用后端接口提交预约
       this.$axios.post('/user/book', appointment)
         .then(response => {
