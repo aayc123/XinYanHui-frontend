@@ -179,7 +179,11 @@ export default {
       };
 
       try {
-        const res = await this.$axios.post('/user/book', appointment);
+        const res = await this.$axios.post('/user/book', appointment,{
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
+        });
         if (res.data.code === "1") {
           this.$message.success('预约成功');
           this.fetchConsultantDetails(); // 刷新数据

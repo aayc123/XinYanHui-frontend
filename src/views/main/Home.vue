@@ -14,34 +14,38 @@
         </div>
         <el-card class="Consultant">
         <div>
-          <h2 style="text-align: left; margin-top: 0px;">在线咨询师列表</h2>
+          <h2 style="text-align: left; margin-top: 0px;">咨询师列表</h2>
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
         <!-- 修改滚动区域 -->
-        <div style="height: 400px; overflow-y: auto; display: flex; flex-direction: column;">
-          <el-row :gutter="12" style="flex: 1; min-height: min-content;">
-            <el-col 
-              :span="8" 
-              v-for="consultant in consultants" 
-              :key="consultant.consultantId"
-              @click.native="goToConsultant(consultant.consultantId, consultant.name)"
-              style="margin-bottom: 15px;" 
+        <div style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
+        <el-row 
+          :gutter="9" 
+          style="flex: 1; min-height: min-content; display: flex; flex-wrap: wrap; "
+        >
+          <el-col 
+            :span="8" 
+            v-for="consultant in consultants" 
+            :key="consultant.consultantId"
+            @click.native="goToConsultant(consultant.consultantId, consultant.name)"
+            style="margin-bottom: 15px; box-sizing: border-box;" 
+          >
+            <el-card 
+              style="cursor: pointer; border-width:1px; 
+                    border-radius: 20px; 
+                    height: 100%;  
+                    border-color: #7a3b10; 
+                    --el-card-border-color: #7a3b10;"
             >
-              <el-card 
-                style="cursor: pointer; border-width:1px; 
-                      border-radius: 20px; 
-                      height: 100%;  
-                      border-color: #7a3b10; 
-                      --el-card-border-color: #7a3b10;">
-                <div style="text-align: center">
-                  <img src="../../assets/head.png" style="width: 100px; height: 100px; border-radius: 50%">
-                  <p>{{ consultant.name }}</p>
-                  <p>{{ consultant.professionalInfo }}</p>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </div>
+              <div style="text-align: center">
+                <img src="../../assets/head.png" style="width: 100px; height: 100px; border-radius: 50%">
+                <p>{{ consultant.name }}</p>
+                <p>{{ consultant.professionalInfo }}</p>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
+      </div>
       </el-card>
         
       </div>
@@ -55,7 +59,7 @@
               <div slot="header" class="clearfix" style="background: #8B4513; border-radius: 4px; padding: 10px 20px;">
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
-              <div style="height: 400px; overflow: hidden; display: flex; flex-direction: column;">
+              <div class="meeting-roll" style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
               <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%;flex:1" header-row-class-name="custom-header" height="100%">
                 <!-- 合并预约日期和时间 -->
                 <el-table-column label="预约时间" width="170">
@@ -91,6 +95,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              <div style="height:100px;"></div>
               </div>
             </el-card>
           </div>
@@ -455,7 +460,7 @@ export default {
   height: auto; /* 确保高度自适应 */
   min-height: 300px; /* 最小高度 */
   margin-top:10px;
-  height: 300px;
+  height: 500px;
   display: flex;
   flex-direction: column;
 }
@@ -506,5 +511,30 @@ export default {
   color: white;
   border: none;
   cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f5e7da;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #8B4513;
+  border-radius: 4px;
+}
+.meeting-roll ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.meeting-roll ::-webkit-scrollbar-track {
+  background: #f5e7da;
+  border-radius: 4px;
+}
+
+.meeting-roll ::-webkit-scrollbar-thumb {
+  background: #8B4513;
+  border-radius: 4px;
 }
 </style>
