@@ -1,39 +1,72 @@
 <template>
   <div>
     <h1>咨询师详情</h1>
+    <div>
+      <img src="../assets/head.png" style="width: 150px; height: 150px; border-radius: 50%" />
+            <h2>{{ consultantName }}</h2>
+            <p>编号：{{ consultantId }}</p>
+            
+    </div>
     <el-card v-if="consultantId">
-      <div style="text-align: center">
-        <img src="../assets/head.png" style="width: 150px; height: 150px; border-radius: 50%" />
-        <h2>{{ consultantName }}</h2>
-        <p>电话：{{ consultantId }}</p>
-        <el-table :data="formattedConsultants" style="width: 100%" header-row-class-name="custom-header">
-          <!-- 合并预约日期和时间 -->
-          <el-table-column label="时间" width="180">
-            <template slot-scope="scope">
-              {{ scope.row.time }}
-            </template>
-          </el-table-column>
+      <el-row :gutter="20">
+        <!-- 左侧日期列 -->
+        <el-col :span="6">
+          <div class="date-list">
+            <el-button 
+              v-for="date in dateGroups" 
+              :key="date.date"
+              @click="selectedDate = date.date"
+              :type="selectedDate === date.date ? 'primary' : ''"
+              style="margin-bottom: 10px; width: 100%"
+            >
+              {{ date.date === 'now' ? '现在在线' : date.date }}
+            </el-button>
+          </div>
+        </el-col>
 
-          <!-- 操作按钮 -->
-          <el-table-column label="操作" width="80">
-            <template slot-scope="scope">
-              <el-button 
-                v-if="scope.row.status === 'available'" 
-                type="text" 
-                @click="createConsultation(scope.row)"
-                :disabled="!isAppointmentActive(scope.row)">
-                预约
-              </el-button>
-              <el-div
-                v-if="scope.row.status === 'busy'"
-                type="text"
-                >
-                无法预约
-              </el-div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+        <!-- 右侧时间段 -->
+        <el-col :span="18">
+          <div style="text-align: center">
+            
+            <el-table 
+              :data="currentTimes" 
+              style="width: 100%" 
+              header-row-class-name="custom-header"
+              empty-text="该日期没有可用时间段"
+            >
+              <el-table-column label="时间" width="180">
+                <template slot-scope="scope">
+                  {{ scope.row.time }}
+                </template>
+              </el-table-column>
+
+              <el-table-column label="操作" width="120">
+                <template slot-scope="scope">
+                  <template v-if="selectedDate === 'now'">
+                    <el-button 
+                      type="text"
+                      @click="GotoChat(scope.row)"
+                    >
+                      进入对话
+                    </el-button>
+                  </template>
+                  <template v-else>
+                    <el-button 
+                      v-if="scope.row.status === 'available'"
+                      type="text"
+                      @click="createConsultation(scope.row)"
+                      :disabled="!isAppointmentActive(scope.row)"
+                    >
+                      预约
+                    </el-button>
+                    <span v-else style="color: #999">已满员</span>
+                  </template>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-col>
+      </el-row>
     </el-card>
     <p v-else>咨询师信息未找到。</p>
   </div>
@@ -43,11 +76,20 @@
 export default {
   data() {
     return {
-      consultantId: parseInt(this.$route.params.id), // 获取路径参数 id
-      consultantName: this.$route.query.name, // 获取查询参数 name
-      consultants: [], // 原始数据
-      formattedConsultants: [], // 格式化后的数据
+      consultantId: parseInt(this.$route.params.id),
+      token: localStorage.getItem('token'),
+      consultantName: this.$route.query.name,
+      appselectedTime: this.$route.query.appselectedTime,
+      dateGroups: [],  // 分组后的日期数据
+      selectedDate: '', // 当前选中的日期
     };
+  },
+  computed: {
+    // 当前选中日期的时间段
+    currentTimes() {
+      const group = this.dateGroups.find(d => d.date === this.selectedDate);
+      return group ? group.times : [];
+    }
   },
   mounted() {
     this.fetchConsultantDetails();
@@ -56,59 +98,111 @@ export default {
     async fetchConsultantDetails() {
       try {
         const response = await this.$axios.get('/user/consultant', {
-          params: { consultantID: parseInt(this.consultantId, 10) },
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
+          params: { consultantID: this.consultantId }
         });
 
         if (response.data.code !== "1") {
-          alert('获取咨询师信息失败：' + response.data.message);
+          this.$message.error('获取信息失败：' + response.data.message);
           return;
         }
 
-        // 将原始数据格式化为表格可用的数组
         this.formatConsultants(response.data.data);
       } catch (error) {
-        this.$message.error('获取咨询师信息失败，请稍后重试');
+        this.$message.error('获取信息失败');
       }
     },
     formatConsultants(data) {
-      // 将对象转换为数组
-      this.formattedConsultants = Object.keys(data).map(key => {
-        return {
-          time: key === "-999999999-01-01T00:00" ? "现在在线" : key, // 替换特殊键
-          status: data[key] === "AVAILABLE" ? "available" : "busy", // 设置状态
-        };
+      const groups = {};
+      
+      Object.entries(data).forEach(([key, value]) => {
+        // 处理特殊键
+        if (key === "-999999999-01-01T00:00") {
+          groups['now'] = {
+            date: 'now',
+            times: [{
+              time: '现在在线',
+              status: 'available',
+              rawTime: key
+            }]
+          };
+          return;
+        }
+
+        // 解析正常时间
+        const dateStr = key.split('T')[0];
+        const timeStr = key.split('T')[1].slice(0, 5);
+        
+        if (!groups[dateStr]) {
+          groups[dateStr] = {
+            date: dateStr,
+            times: []
+          };
+        }
+
+        groups[dateStr].times.push({
+          time: timeStr,
+          status: value === "AVAILABLE" ? "available" : "busy",
+          rawTime: key
+        });
+      });
+
+      // 转换并排序日期
+      this.dateGroups = Object.values(groups)
+        .sort((a, b) => a.date === 'now' ? -1 : b.date.localeCompare(a.date));
+      
+      // 默认选中第一个日期
+      if (this.dateGroups.length > 0) {
+        this.selectedDate = this.appselectedTime==='现在在线'? this.dateGroups[0].date:this.appselectedTime;
+      }
+    },
+    // 进入聊天
+    GotoChat(row) {
+      this.$router.push({
+        path: '/chat',
+        query: {
+          consultantId: this.consultantId,
+          consultantName: this.consultantName,
+          appointmentDate:row.time
+        }
       });
     },
-    createConsultation(row) {
-      // 构造预约对象
+    // 创建预约
+    async createConsultation(row) {
       const appointment = {
-        userId:parseInt(localStorage.getItem('userId'),10) , // 用户ID
-        consultantId: this.consultantId, 
-        appointmentDate: row.time.substring(0,10), // 预约时间
-        appointmentTime: row.time.substring(11,16)
+        userId: parseInt(localStorage.getItem('userId')),
+        consultantId: this.consultantId,
+        appointmentDate: this.selectedDate,
+        appointmentTime: row.time
       };
-      //alert(row.time.substring(11,15));
-      // 调用后端接口提交预约
-      this.$axios.post('/user/book', appointment)
-        .then(response => {
-          if (response.data.code === "1") {
-            //alert('预约成功！');
-            this.$message.success('预约成功！');
-            // 刷新数据以更新状态
-            this.fetchConsultantDetails();
-          } else {
-            this.$message.error('预约失败：' + response.data.msg);
-          }
-        })
-        .catch(error => {
-          this.$message.error('预约失败，请稍后重试');
-          alert('预约请求错误:', error);
-        });
+
+      try {
+        const res = await this.$axios.post('/user/book', appointment);
+        if (res.data.code === "1") {
+          this.$message.success('预约成功');
+          this.fetchConsultantDetails(); // 刷新数据
+        } else {
+          this.$message.error(res.data.msg);
+        }
+      } catch (error) {
+        this.$message.error('预约失败');
+      }
     },
     isAppointmentActive(row) {
-      // 判断是否可以激活预约
-      return row.status === "available";
-    },
-  },
+      return row.status === 'available';
+    }
+  }
 };
 </script>
+
+<style>
+.date-list {
+  padding: 10px;
+  border-right: 1px solid #ebeef5;
+}
+.custom-header th {
+  background-color: #f5f7fa;
+}
+</style>

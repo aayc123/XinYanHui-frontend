@@ -1,7 +1,7 @@
 <template>
   <div class="schedule-container">
     <div class="header">
-      <h2>2025年{{ currentMonth }}月{{ currentMonthName }}</h2>
+      <h2>{{ currentMonth }}月预约记录</h2>
       <button @click="toggleView">
         切换至 {{ isCalendarView ? "列表" : "日历" }} 视图
       </button>
@@ -17,7 +17,7 @@
         :class="['day', { past: day.isPast }]"
         @click="showSchedule(day.date)"
       >
-        <div>{{ day.date }}</div>
+        <div>{{  formatDisplayDate(day.date) }}</div>
 
         <!-- 展示当天的预约信息 -->
         <div
@@ -87,6 +87,7 @@ export default {
   data() {
     return {
       userId: localStorage.getItem("userId"),
+      token: localStorage.getItem("token"),
       isCalendarView: true,
       currentMonth: new Date().getMonth() + 1,
       currentMonthName: new Intl.DateTimeFormat("en", { month: "long" }).format(new Date()),
@@ -106,23 +107,24 @@ export default {
   methods: {
     async fetchAppointments() {
       try {
-        this.$axios
-          .get("/user/appointments", {
-            params: { userId: parseInt(this.userId, 10) },
-          })
-          .then((response) => {
-            if (response.data.code !== "1") {
-              return;
-            }
-            // 获取原始数据并过滤掉取消的预约
-            let rawData = response.data.data.filter(
-              (app) => app.status !== "canceled"
-            );
-            this.appointments = rawData;
-            this.generateMonthData();
-          });
+        const response = await this.$axios.get("/user/appointments", {
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
+          params: { userId: parseInt(this.userId, 10) },
+        });
+        if (response.data.code === "1") {
+          this.appointments = response.data.data.filter(
+            (app) => app.status !== "canceled"
+          );
+        } else {
+          this.appointments = []; // 确保清空数据
+        }
       } catch (error) {
         this.$message.error("获取预约数据失败");
+        this.appointments = [];
+      } finally {
+        this.generateMonthData(); // 确保无论成功失败都生成月份
       }
     },
     toggleView() {
@@ -137,10 +139,19 @@ export default {
         }
       });
     },
-      
+    formatDisplayDate(date){
+      const [, d] = date.split(/[-/]/);
+     
+      // const month = m.padStart(2, '0');
+      const day = d.padStart(2, '0');
+      return Number(day);
+    },
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios
         .post("/user/cancel", {
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
           appointmentId: parseInt(appointmentId, 10),
           cancellationReason: cancellationReason,
         })
@@ -174,34 +185,29 @@ export default {
       // TODO: 跳转到详情页面或显示详细记录
     },
     generateMonthData() {
-      const year = new Date().getFullYear();
-      const month = new Date().getMonth();
-      const days = new Date(year, month + 1, 0).getDate();
+      const year = 2025; // 固定为2025年
+      const month = this.currentMonth - 1; // 转换为0-11
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      let firstDay = new Date(year, month, 1).getDay();
+      // 计算首日偏移
+      const firstDay = new Date(year, month, 1).getDay();
       this.firstDayOffset = firstDay === 0 ? 6 : firstDay - 1;
 
-      this.monthDays = Array.from({ length: days }, (_, i) => ({
-        date: `${month + 1}-${i + 1}`,
-        day: i + 1,
-        isPast: i + 1 < new Date().getDate(),
-      }));
-
-      this.scheduleList = this.monthDays.map((day) => ({
-        date: `${day.day}日`,
-        time: this.getDayAppointments(day.date)
-          .map((app) => app.appointmentTime)
-          .join(", "),
-        isCompleted: day.isPast,
-        leaveApplied: false,
-      }));
+      // 生成日期数组
+      this.monthDays = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        return {
+          date: `${this.currentMonth}-${day}`,
+          day: day,
+          isPast: new Date(year, month, day) < new Date(), // 正确判断过去日期
+        };
+      });
     },
     getDayAppointments(date) {
-      const fullDate = `2025-${String(date.split("-")[0]).padStart(2, "0")}-${String(
-        date.split("-")[1]
-      ).padStart(2, "0")}`;
+      const [month, day] = date.split("-").map(Number);
+      const fullDate = `2025-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
       return this.appointments.filter(
-        (app) => app.appointmentDate === fullDate && app.status !== "canceled"
+        (app) => app.appointmentDate === fullDate
       );
     },
     formatDate(date) {
@@ -223,6 +229,8 @@ export default {
   background-color: white;
   overflow-x: hidden;
   overflow-y: auto;
+  border: 1px solid #7a3b10; 
+  border-radius: 20px;
 }
 
 .header {
@@ -238,8 +246,8 @@ button {
   cursor: pointer;
 }
 
-.weekdays {
-  display: grid;
+.weekday {
+  
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
   text-align: center;
@@ -255,7 +263,7 @@ button {
 }
 
 .day {
-  height: 80px;
+  min-height:50px;
   border: 1px solid #ccc;
   text-align: center;
   position: relative;
@@ -278,7 +286,7 @@ button {
 .appointment-item {
   margin: 0px 0;
   padding: 2px 5px;
-  background-color: #f0e68c;
+  background-color: #FFE4B5;
   border-radius: 4px;
   font-size: 10px;
 }

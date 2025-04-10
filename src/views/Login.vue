@@ -14,12 +14,13 @@
                         <el-input type="password" v-model="loginForm.password"/>
                     </el-form-item>
                     <el-form-item>
-                        <el-button class="btn" @click="submitForm('loginForm')">提交</el-button>
+                        <el-button class="btn" @click="submitForm('loginForm')">登录</el-button>
                         <!-- <el-button  type="primary" @click="submitForm('loginForm')">提交</el-button> -->
                         <!-- <el-button type="primary" @click="jump">提交</el-button> -->
                     </el-form-item>
                 </el-form>
                 <div @click="switchToRegister" class="remind">没有账号？点此注册</div>
+                <div @click="switchToRegister" class="remind">忘记密码</div>
             </div>
             <div v-else-if="activeTab === 'register'" style="margin-top:230px; width:80%">
                 <!-- 注册表单 -->
@@ -40,7 +41,7 @@
                         <el-input type="password" v-model="registerForm.confirmPassword"/>
                     </el-form-item>
                     <el-form-item>
-                        <el-button class="btn" @click="submitForm('registerForm')">提交</el-button>
+                        <el-button class="btn" @click="submitForm('registerForm')">注册</el-button>
                         <div @click="switchToLogin" class="remind2">已有账号？点此登录</div>
                         <!-- <el-button type="primary" @click="submitForm('registerForm')">提交</el-button> -->
                     </el-form-item>
@@ -122,10 +123,20 @@ export default {
         // 手机号验证规则
         var validatePhoneNumber = (rule, value, callback) => {
             const reg = /^1[3456789]\d{9}$/;
-            if (value.length === 0) {
-                callback(new Error('请输入手机号'));
+            if (value.length !== 11) {
+                callback(new Error('请输入正确手机号'));
             } else if (!reg.test(value)) {
                 callback(new Error('手机号格式错误'));
+            } else {
+                callback();
+            }
+        };
+        var validateEmail = (rule, value, callback) => {
+            const reg = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (value === '') {
+                callback(new Error('请输入邮箱'));
+            } else if (!reg.test(value)) {
+                callback(new Error('邮箱格式不正确'));
             } else {
                 callback();
             }
@@ -159,10 +170,16 @@ export default {
                     validator: validateConfirmPassword,
                     trigger: "blur"
                 }],
-                phonenum: [{ // 新增手机号验证规则
+                phone: [{ // 新增手机号验证规则
+                    required:true,
                     validator: validatePhoneNumber,
                     trigger: "blur"
-                }]
+                }],
+                email: [{
+                    required:true,
+                    validator: validateEmail,
+                    trigger: "blur"
+                }],
             }
         }
     },
@@ -209,10 +226,12 @@ export default {
                                 const user = response.data.data; // 获取用户数据
                                 const userId=user.userId;
                                 const username=user.username;
+                                const token=user.token;
                                 localStorage.setItem('LoginState', 'true'); // 设置登录状态
                                 this.$store.dispatch('setUserInfo', { userId, username });
                                 localStorage.setItem('userId', userId);
                                 localStorage.setItem('username', username);
+                                localStorage.setItem('token',token);
                                 //console.log('Username:',user.username);
                                 // 跳转到首页
                                 this.$router.push('/home');
@@ -352,6 +371,7 @@ export default {
     color:#999;
     margin-left: 90px;
     font-size: 14px;
+    margin-top:10px;
 }
 .remind:hover{
     color: #333;

@@ -8,7 +8,7 @@
             <span v-for="date in dateOptions" :key="date" @click="onDateClick(date)" 
                   :class="['date-item', { 'selected': selectedDate === date }]" 
                   style="cursor:pointer;">
-                {{ date }}
+                {{  formatDisplayDate(date) }}
             </span>
         </div>
         </div>
@@ -17,10 +17,22 @@
           <h2 style="text-align: left; margin-top: 0px;">在线咨询师列表</h2>
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
-          <el-row :gutter="20">
-            <el-col :span="12" v-for="consultant in consultants" :key="consultant.consultantId" 
-            @click.native="goToConsultant(consultant.consultantId, consultant.name)">
-              <el-card style="cursor: pointer; border-width:2px; border-radius: 20px; margin-bottom: 15px; border-color: #7a3b10; --el-card-border-color: #7a3b10;">
+        <!-- 修改滚动区域 -->
+        <div style="height: 400px; overflow-y: auto; display: flex; flex-direction: column;">
+          <el-row :gutter="12" style="flex: 1; min-height: min-content;">
+            <el-col 
+              :span="8" 
+              v-for="consultant in consultants" 
+              :key="consultant.consultantId"
+              @click.native="goToConsultant(consultant.consultantId, consultant.name)"
+              style="margin-bottom: 15px;" 
+            >
+              <el-card 
+                style="cursor: pointer; border-width:1px; 
+                      border-radius: 20px; 
+                      height: 100%;  
+                      border-color: #7a3b10; 
+                      --el-card-border-color: #7a3b10;">
                 <div style="text-align: center">
                   <img src="../../assets/head.png" style="width: 100px; height: 100px; border-radius: 50%">
                   <p>{{ consultant.name }}</p>
@@ -29,7 +41,9 @@
               </el-card>
             </el-col>
           </el-row>
-        </el-card>
+        </div>
+      </el-card>
+        
       </div>
       <div class="gap"></div>
       <div class="right">
@@ -37,13 +51,14 @@
         <div class="content-wrapper">
           
           <div class="latest-meeting">
-            <el-card style="border-color: #7a3b10; --el-card-border-color: #7a3b10;">
+            <el-card style="border-color: #7a3b10; --el-card-border-color: #7a3b10;border-radius: 20px;">
               <div slot="header" class="clearfix" style="background: #8B4513; border-radius: 4px; padding: 10px 20px;">
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
-              <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%" header-row-class-name="custom-header">
+              <div style="height: 400px; overflow: hidden; display: flex; flex-direction: column;">
+              <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%;flex:1" header-row-class-name="custom-header" height="100%">
                 <!-- 合并预约日期和时间 -->
-                <el-table-column label="预约时间" width="180">
+                <el-table-column label="预约时间" width="170">
                   <template slot-scope="scope">
                     {{ scope.row.appointmentDate }}   {{ scope.row.appointmentTime }}   
                     
@@ -76,6 +91,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
             </el-card>
           </div>
           <div v-if="showLeaveModal" class="modal">
@@ -98,6 +114,7 @@
 
 <script>
 //import calendar from '../../components/calendar.vue';
+//import { DepthTexture } from 'three';
 import MySchedule from '../../components/MySchedule.vue';
 
 export default {
@@ -119,6 +136,7 @@ export default {
   data() {
     return {
       userId: localStorage.getItem('userId'), 
+      token: localStorage.getItem('token'), // 获取 JWT Token
       showLeaveModal: false, // 控制模态框显示
       leaveReason: "", // 用户填写的取消理由
       currentAppointmentId: null, // 当前要取消的预约 ID
@@ -140,20 +158,28 @@ export default {
     this.fetchAppointments();
   },
   methods: {
-    async generateDateOptions() {
-      
+    async generateDateOptions() {     
       const today = new Date(); // 固定为题目中的日期
-      for (let i = 0; i < 7; i++) {
+      this.dateOptions.push('现在在线');
+      for (let i = 1; i < 7; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + i);
-          
           this.dateOptions.push(this.formatDate(date));
       }
       //alert('Generated dateOptions:', this.dateOptions);
     },
+    TransDate(date){
+      if(date==='现在在线'){
+        return this.formatDate(new Date());
+      }
+    },
     async fetchConsultants(availableDate) {
       try {
+        availableDate=this.TransDate(availableDate);
         this.$axios.get('/user/consultantlist',{
+        headers: {
+          token:this.token, // 获取 JWT Token
+        },
         params:{availableDate:availableDate},
         }).then(res => {
           if (res.data.code === "1") { // 根据你的后端接口实际结构调整
@@ -169,8 +195,10 @@ export default {
     },
     async fetchAppointments() {
       try {
-        //alert(this.userId);
         this.$axios.get('/user/appointments', {
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
           params:{userId:parseInt(this.userId, 10)},
           }).then(response=>{
           if (response.data.code !== "1") {
@@ -189,6 +217,17 @@ export default {
         this.$message.error('获取预约数据失败')
       }
     },
+    formatDisplayDate(date) {
+      if (date === '现在在线') return date;
+      
+      // 解析日期格式（支持YYYY-MM-DD和后端可能返回的其他格式）
+      const [y, m, d] = date.split(/[-/]/);
+      const year = y.slice(-2);  // 取年份后两位
+      const month = m.padStart(2, '0');
+      const day = d.padStart(2, '0');
+      return `${year}/${month}/${day}`;
+    },
+
     formatDate(date) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -200,7 +239,7 @@ export default {
       if (!date || !time) return '未知时间';
       return this.$moment(`${date} ${time}`).format('YYYY-MM-DD HH:mm');
     },
-
+    
     onDateClick(selectedDate) {
       if (this.selectedDate !== selectedDate) {
           this.selectedDate = selectedDate;
@@ -250,6 +289,9 @@ export default {
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios
         .post("/user/cancel", {
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
           appointmentId: parseInt(appointmentId, 10),
           cancellationReason: cancellationReason,
         })
@@ -282,7 +324,7 @@ export default {
   goToConsultant(id, name) {
     this.$router.push({
       path: `/consultant/${id}`,
-      query: { name: name } // 通过查询参数传递 name
+      query: { name: name ,appselectedTime:this.selectedDate} // 通过查询参数传递 name
     });
   }
   },
@@ -316,7 +358,7 @@ export default {
   margin-top: 30px;
   border-radius: 20px;
   background-color: transparent;
-  border-color: #5c3317;
+  border:2px solid #5c3317;
 }
 .date-selector {
     display: flex;
@@ -324,12 +366,13 @@ export default {
     margin-bottom: 20px;
 }
 .date-item {
+  font-size: 16px;
     padding: 5px 10px;
     border-radius: 5px;
     background-color: #f0f0f0;
 }
 .date-item.selected {
-    background-color: #293ce7;
+    background-color: #5c3317;
     color: white;
 }
 .category-selector {
@@ -412,8 +455,31 @@ export default {
   height: auto; /* 确保高度自适应 */
   min-height: 300px; /* 最小高度 */
   margin-top:10px;
-  
+  height: 300px;
+  display: flex;
+  flex-direction: column;
 }
+.latest-meeting .el-card__body {
+  flex: 1;
+  overflow: hidden;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.latest-meeting .el-table {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 保证表格头固定 */
+.el-table__header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f5e7da;
+}
+
 .modal {
   position: fixed;
   top: 50%;
