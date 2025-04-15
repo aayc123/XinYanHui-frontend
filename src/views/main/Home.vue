@@ -53,31 +53,29 @@
       <div class="right">
         <!-- 使用一个包裹容器来确保子元素垂直排列 -->
         <div class="content-wrapper">
-          
           <div class="latest-meeting">
             <el-card style="border-color: #7a3b10; --el-card-border-color: #7a3b10;border-radius: 20px;">
               <div slot="header" class="clearfix" style="background: #8B4513; border-radius: 4px; padding: 10px 20px;">
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
-              <div class="meeting-roll" style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
+              <div class="meeting-roll" style="height:200px;overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
               <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%;flex:1" header-row-class-name="custom-header" height="100%">
                 <!-- 合并预约日期和时间 -->
-                <el-table-column label="预约时间" width="170">
+                <el-table-column label="预约时间" width="170" height="10%">
                   <template slot-scope="scope">
                     {{ scope.row.appointmentDate }}   {{ scope.row.appointmentTime }}   
-                    
                   </template>
                 </el-table-column>
 
                 <!-- 咨询师信息 -->
-                <el-table-column label="咨询师" width="120">
+                <el-table-column label="咨询师" width="120"  height="10%">
                   <template slot-scope="scope">
                     {{ scope.row.consultantName }}
                   </template>
                 </el-table-column>
 
                 <!-- 操作按钮 -->
-                <el-table-column label="状态" width="80">
+                <el-table-column label="状态" width="80"  height="10%">
                   <template slot-scope="scope">
                     <el-button 
                       v-if="scope.row.status === 'ready'" 
@@ -95,8 +93,9 @@
                   </template>
                 </el-table-column>
               </el-table>
-              <div style="height:100px;"></div>
+              <div style="height:20px;"></div>
               </div>
+              <div style="height:20px;"></div>
             </el-card>
           </div>
           <div v-if="showLeaveModal" class="modal">
@@ -278,7 +277,6 @@ export default {
         this.$message.warning('当前时间不在预约时间内，无法开始咨询');
         return;
       }
-
       // 跳转到咨询页面或执行其他逻辑
       this.$router.push({
         path: '/chat',
@@ -289,8 +287,6 @@ export default {
         }
       });
     },
-
-     
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios
         .post("/user/cancel", {
@@ -300,9 +296,14 @@ export default {
           appointmentId: parseInt(appointmentId, 10),
           cancellationReason: cancellationReason,
         })
-        .then(() => {
-          this.$message.success("预约已取消");
-          this.fetchAppointments(); // 刷新数据
+        .then(response=> {
+          if(response.data.code==="1"){
+            this.$message.success("预约已取消");
+            this.fetchAppointments(); // 刷新数据
+          }
+          else{
+            this.$message.error(response.data.msg);
+          }
         })
         .catch(() => {
           this.$message.error("取消预约失败，请稍后重试");
@@ -368,7 +369,6 @@ export default {
 .date-selector {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
 }
 .date-item {
   font-size: 16px;
@@ -454,11 +454,17 @@ export default {
   width: 35%;
   height: 600px;
 }
+.content-wrapper{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; 
+  height: 50%; 
+}
 .latest-meeting{
   padding-bottom: 10px;
   border-radius: 20px;
   height: auto; /* 确保高度自适应 */
-  min-height: 300px; /* 最小高度 */
+  min-height: 250px; /* 最小高度 */
   margin-top:10px;
   height: 500px;
   display: flex;

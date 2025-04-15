@@ -25,7 +25,7 @@
           :key="appointment.appointmentId"
           class="appointment-slot"
         >
-          <div v-if="appointment.status === 'booked'" class="appointment-item">
+          <div v-if="appointment.status === 'booked'" class="appointment-item-booked">
             预约
           </div>
           <div v-else-if="appointment.status === 'completed'" class="appointment-item">
@@ -47,7 +47,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="appointment in appointments" :key="appointment.appointmentId">
+          <tr v-for="appointment in select(appointments)" :key="appointment.appointmentId">
             <td>{{ formatDate(appointment.appointmentDate) }}</td>
             <td>{{ appointment.appointmentTime }}</td>
             <td>
@@ -70,7 +70,12 @@
             </td>
           </tr>
         </tbody>
+       
       </table>
+      <div>
+          
+          <button class="navTohome" @click="Tohome"> >>>前往个人主页查看更多</button>
+        </div>
     </div>
 
     <div v-if="showLeaveModal" class="modal">
@@ -127,6 +132,9 @@ export default {
         this.generateMonthData(); // 确保无论成功失败都生成月份
       }
     },
+    Tohome(){
+      this.$router.push({ path: "/userHome" });
+    },
     toggleView() {
       this.isCalendarView = !this.isCalendarView;
     },
@@ -145,6 +153,9 @@ export default {
       // const month = m.padStart(2, '0');
       const day = d.padStart(2, '0');
       return Number(day);
+    },
+    select(appointments) {
+      return appointments.filter((app) => app.appointmentDate.startsWith("2025-04")).slice(0, 5); 
     },
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios
@@ -264,6 +275,7 @@ button {
 
 .day {
   min-height:50px;
+  max-height:120px;
   border: 1px solid #ccc;
   text-align: center;
   position: relative;
@@ -272,6 +284,7 @@ button {
 
 .day.past {
   background: #ddd;
+  max-height:120px;
 }
 
 .appointment-slot {
@@ -290,7 +303,23 @@ button {
   border-radius: 4px;
   font-size: 10px;
 }
-
+.appointment-item-booked{
+  margin: 0px 0;
+  padding: 2px 5px;
+  background-color: #d1f8c6;
+  border-radius: 4px;
+  font-size: 10px;
+}
+.navTohome{
+  font-size: 14px;
+  float:right;
+  color:#999;
+  background-color:white ;
+}
+.navTohome:hover{
+  color:#333;
+  cursor:pointer;
+}
 .list-view table {
   width: 100%;
   border-collapse: collapse;

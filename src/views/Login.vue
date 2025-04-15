@@ -4,25 +4,7 @@
             <h1 style="color: #8B4513;width: 20%;">心研汇</h1>
         </div>
         <div class="right">
-            <div v-if="activeTab === 'login'" style="margin-top:230px;width:80%">
-                <!-- 登录表单 -->
-                <el-form :model="loginForm" :rules="rules" ref="loginForm" status-icon label-width="90px">
-                    <el-form-item label="用户名" prop="account">
-                        <el-input type="text" v-model="loginForm.account" />
-                    </el-form-item>
-                    <el-form-item label="密码" prop="password">
-                        <el-input type="password" v-model="loginForm.password"/>
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button class="btn" @click="submitForm('loginForm')">登录</el-button>
-                        <!-- <el-button  type="primary" @click="submitForm('loginForm')">提交</el-button> -->
-                        <!-- <el-button type="primary" @click="jump">提交</el-button> -->
-                    </el-form-item>
-                </el-form>
-                <div @click="switchToRegister" class="remind">没有账号？点此注册</div>
-                <div @click="switchToRegister" class="remind">忘记密码</div>
-            </div>
-            <div v-else-if="activeTab === 'register'" style="margin-top:230px; width:80%">
+            <div v-if="activeTab === 'register'" style="margin-top:230px; width:80%" @keydown.enter="submitForm('registerForm')">
                 <!-- 注册表单 -->
                 <el-form :model="registerForm" :rules="rules" ref="registerForm" status-icon label-width="90px">
                     <el-form-item label="用户名" prop="username">
@@ -35,19 +17,37 @@
                         <el-input type="text" v-model="registerForm.phone" placeholder="长度为11位"/>
                     </el-form-item>
                     <el-form-item label="密码" prop="password">
-                        <el-input type="password" v-model="registerForm.password" placeholder="只能输入数字或字母，长度不少于6位"/>
+                        <el-input type="password" v-model="registerForm.password" show-password placeholder="只能输入数字或字母，长度不少于6位"/>
                     </el-form-item>
                     <el-form-item label="确认密码" prop="confirmPassword">
-                        <el-input type="password" v-model="registerForm.confirmPassword"/>
+                        <el-input type="password" v-model="registerForm.confirmPassword" show-password/>
                     </el-form-item>
                     <el-form-item>
                         <el-button class="btn" @click="submitForm('registerForm')">注册</el-button>
-                        <div @click="switchToLogin" class="remind2">已有账号？点此登录</div>
+                        <button @click="switchToLogin" class="remind2">已有账号？点此登录</button>
                         <!-- <el-button type="primary" @click="submitForm('registerForm')">提交</el-button> -->
                     </el-form-item>
                 </el-form>
             </div>
-            <div v-else>
+            <div v-else-if="activeTab === 'login'" style="margin-top:230px;width:80%" @keydown.enter="submitForm('loginForm')">
+                <!-- 登录表单 -->
+                <el-form :model="loginForm" :rules="rules" ref="loginForm" status-icon label-width="90px"  >
+                    <el-form-item label="用户名" prop="account">
+                        <el-input type="text" v-model="loginForm.account" />
+                    </el-form-item>
+                    <el-form-item label="密码" prop="password">
+                        <el-input type="password" v-model="loginForm.password" show-password/>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button class="btn" @click="submitForm('loginForm')" type="submit">登录</el-button>
+                        <!-- <el-button  type="primary" @click="submitForm('loginForm')">提交</el-button> -->
+                        <!-- <el-button type="primary" @click="jump">提交</el-button> -->
+                    </el-form-item>
+                </el-form>
+                <button @click="switchToRegister" class="remind">没有账号？点此注册</button>
+                <button class="forget">忘记密码</button>
+            </div>
+            <!-- <div v-else>
                 <h1 style="margin-top:230px;">开始使用</h1>
                 <div class="choice">
                     <button class="btn1" @click="switchToLogin">登录</button>
@@ -56,7 +56,7 @@
                 <div class="pic" style="width:80%">
                     <img src="../assets/icon.png" alt="icon" style="position:fixed;bottom:0;margin-right:10px;width:150px; height: 100px;"/> 
                 </div>
-            </div>
+            </div> -->
             
         </div>
     </div>
@@ -144,7 +144,7 @@ export default {
 
         return {
             currentIndex: "login",
-            activeTab: "",
+            activeTab: "login",
             loginForm: {
                 type:0,
                 account: "",
@@ -369,9 +369,10 @@ export default {
     justify-content: center;
     display:flex;
     color:#999;
-    margin-left: 90px;
+    margin-left: 280px;
     font-size: 14px;
     margin-top:10px;
+    background-color: white;
 }
 .remind:hover{
     color: #333;
@@ -381,11 +382,26 @@ export default {
     justify-content: center;
     display:flex;
     color:#999;
+    background-color: white;
+    margin-left: 190px;
+    margin-top:10px;
 }
 .remind2:hover{
     color: #333;
     cursor: pointer;
 }
-
+.forget{
+    justify-content: center;
+    display:flex;
+    color:#999;
+    margin-left: 310px;
+    font-size: 14px;
+    margin-top:10px;
+    background-color: white;
+}
+.forget:hover{
+    color: #333;
+    cursor: pointer;
+}
 </style>
 

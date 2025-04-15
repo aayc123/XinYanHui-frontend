@@ -9,6 +9,7 @@ export default new Vuex.Store({
     userId: null, // 用户 ID
     username: null, // 用户名
   },
+  
   mutations: {
     SET_USER_INFO(state, payload) {
       state.userId = payload.userId;
@@ -27,4 +28,5 @@ export default new Vuex.Store({
       commit('CLEAR_USER_INFO');
     },
   },
+  
 });
