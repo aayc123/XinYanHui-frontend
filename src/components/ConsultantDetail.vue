@@ -4,7 +4,7 @@
     <div>
       <img src="../assets/head.png" style="width: 150px; height: 150px; border-radius: 50%" />
             <h2>{{ consultantName }}</h2>
-            <p>编号：{{ consultantId }}</p>
+            <p>咨询师简介：{{ consultantInfo }}</p>
             
     </div>
     <el-card v-if="consultantId">
@@ -78,8 +78,9 @@ export default {
     return {
       consultantId: parseInt(this.$route.params.id),
       token: localStorage.getItem('token'),
-      consultantName: this.$route.query.name,
-      appselectedTime: this.$route.query.appselectedTime,
+      consultantName: '',
+      appselectedTime: '',
+      consultantInfo:'',
       dateGroups: [],  // 分组后的日期数据
       selectedDate: '', // 当前选中的日期
     };
@@ -93,7 +94,16 @@ export default {
   },
   mounted() {
     this.fetchConsultantDetails();
+    const consultantData = JSON.parse(sessionStorage.getItem('consultantData'));
+    if (consultantData) {
+      this.consultantName = consultantData.name;
+      this.appselectedTime = consultantData.appselectedTime;
+      this.consultantInfo = consultantData.info;
+      // 清除存储（可选）
+      sessionStorage.removeItem('consultantData');
+    }
   },
+  
   methods: {
     async fetchConsultantDetails() {
       try {
@@ -161,6 +171,11 @@ export default {
     // 进入聊天
     GotoChat(row) {
       this.$router.push({
+        // sessionStorage.setItem('consultantData', JSON.stringify({
+        // name: name,
+        // appselectedTime: this.selectedDate,
+        // info: info
+        // }));
         path: '/chat',
         query: {
           consultantId: this.consultantId,
@@ -205,6 +220,7 @@ export default {
 .date-list {
   padding: 10px;
   border-right: 1px solid #ebeef5;
+  width: 80%;
 }
 .custom-header th {
   background-color: #f5f7fa;

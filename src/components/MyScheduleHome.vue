@@ -1,22 +1,12 @@
 <template>
   <div class="schedule-container">
     <div class="header">
-      <div v-if="isCalendarView">
-      <span 
-      v-for="date in monthRange" 
-      :key="date" 
-      @click="onDateClick(date)"
-      :class="['date-item', { 'selected': selectedMonth === date }]"
-      >
-      {{ date }}月
-    </span>
-    </div>
-    <div style="width:20%;height:10px;"> </div>
+      <h2>{{ currentMonth }}月预约记录</h2>
       <button @click="toggleView">
         切换至 {{ isCalendarView ? "列表" : "日历" }} 视图
       </button>
     </div>
-    
+
     <!-- 日历视图 -->
     <div v-if="isCalendarView" class="calendar-view">
       <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
@@ -27,7 +17,7 @@
         :class="['day', { past: day.isPast }]"
         @click="showSchedule(day.date)"
       >
-        <div>{{  day.date}}</div>
+        <div>{{  formatDisplayDate(day.date) }}</div>
 
         <!-- 展示当天的预约信息 -->
         <div
@@ -46,7 +36,7 @@
     </div>
 
     <!-- 列表视图 -->
-    <div v-else  class="list-view">
+    <div v-else class="list-view">
       <table>
         <thead>
           <tr>
@@ -57,7 +47,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="appointment in appointments" :key="appointment.appointmentId">
+          <tr v-for="appointment in select(appointments)" :key="appointment.appointmentId">
             <td>{{ formatDate(appointment.appointmentDate) }}</td>
             <td>{{ appointment.appointmentTime }}</td>
             <td>
@@ -82,6 +72,10 @@
         </tbody>
        
       </table>
+      <div>
+          
+          <button class="navTohome" @click="Tohome"> >>>前往个人主页查看更多</button>
+        </div>
     </div>
 
     <div v-if="showLeaveModal" class="modal">
@@ -110,12 +104,9 @@ export default {
       leaveReason: "", // 用户填写的取消理由
       currentAppointmentId: null, // 当前要取消的预约 ID
       appointments: [],
-      monthRange: [], // 用于存储过去三个月的日期数据
-      selectedMonth: new Date().getMonth() + 1, // 当前月份
     };
   },
   mounted() {
-    this.generateMonth(); // 生成月份数据
     this.fetchAppointments();
   },
   methods: {
@@ -131,6 +122,7 @@ export default {
           this.appointments = response.data.data.filter(
             (app) => app.status !== "canceled"
           );
+          
         } else {
           this.appointments = []; // 确保清空数据
         }
@@ -138,21 +130,8 @@ export default {
         this.$message.error("获取预约数据失败");
         this.appointments = [];
       } finally {
-        this.generateMonthData(this.selectedMonth); // 确保无论成功失败都生成月份
+        this.generateMonthData(); // 确保无论成功失败都生成月份
       }
-    },
-    async generateMonth(){
-      const monthRange = [];
-      monthRange[0] = new Date().getMonth() + 1;
-      for (let i = 1; i < 3; i++) {
-        const month=new Date().getMonth() + 1-i;
-        monthRange.push(month);
-      }
-      this.monthRange = monthRange.reverse(); // 反转数组以显示从当前月份到过去三个月的顺序
-    },
-    onDateClick(date){
-      this.selectedMonth=date;
-      this.generateMonthData(this.selectedMonth);
     },
     Tohome(){
       this.$router.push({ path: "/userHome" });
@@ -215,9 +194,9 @@ export default {
       alert(`查看记录：${appointment.appointmentDate} ${appointment.appointmentTime}`);
       // TODO: 跳转到详情页面或显示详细记录
     },
-    generateMonthData(date) {
+    generateMonthData() {
       const year = 2025; // 固定为2025年
-      const month = date-1; // 转换为0-11
+      const month = this.currentMonth - 1; // 转换为0-11
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
       // 计算首日偏移
@@ -228,7 +207,7 @@ export default {
       this.monthDays = Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
         return {
-          date: `${this.selectedMonth}-${day}`,
+          date: `${this.currentMonth}-${day}`,
           day: day,
           isPast: new Date(year, month, day) < new Date(), // 正确判断过去日期
         };
@@ -245,6 +224,9 @@ export default {
       const [year, month, day] = date.split("-");
       return `${year}-${month}-${day}`;
     },
+    select(app){
+      return app.filter((app) => app.appointmentDate.startsWith("2025-04")).slice(0, 5); 
+    }
   },
 };
 </script>
@@ -340,17 +322,6 @@ button {
   color:#333;
   cursor:pointer;
 }
-.list-view {
-  max-height: 520px; /* 根据需求调整高度 */
-  overflow-y: auto;
-  display: block;
-}
-.list-view thead {
-  position: sticky;
-  top: 0;
-  background: white; /* 避免透明背景 */
-  z-index: 1;
-}
 .list-view table {
   width: 100%;
   border-collapse: collapse;
@@ -362,19 +333,7 @@ button {
   padding: 10px;
   text-align: center;
 }
-.date-item {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  background-color: white;
-  margin-right:5px;
-  border:solid 1px #5c3317;
-  flex-shrink: 0;
-}
-.date-item.selected {
-    background-color: #5c3317;
-    color: #f2f1e4;
-}
+
 .completed {
   color: green;
 }

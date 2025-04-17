@@ -3,23 +3,48 @@
     <el-container class="container">
       <div class="conseler">
         <!-- 类别选择区域 -->
-        <div class="category-selector">
-          <div class="date-selector">
-            <span v-for="date in dateOptions" :key="date" @click="onDateClick(date)" 
-                  :class="['date-item', { 'selected': selectedDate === date }]" 
-                  style="cursor:pointer;">
-                {{  formatDisplayDate(date) }}
+
+        <div class="label">
+          <!-- 现在在线区域 -->
+          <div class="category-selector" style="display: flex; align-items: center; width: 100%;">
+            <button
+              @click="onDateClick('现在在线')"
+              :class="['date-item', { 'selected': selectedDate === '现在在线' }]"
+              style="cursor:pointer; flex-shrink: 0;"
+            >
+              {{ formatDisplayDate("现在在线") }}
+            </button>
+            <div style="margin-left:20px;color:#666; white-space: nowrap;">
+              咨询师现在在线，预约后马上进入对话
+            </div>
+          </div>
+
+          <!-- 日期选择区域 -->
+          <div class="category-selector2">
+            
+            <span 
+              v-for="date in dateOptions" 
+              :key="date" 
+              @click="onDateClick(date)"
+              :class="['date-item', { 'selected': selectedDate === date }]"
+            >
+              {{ formatDisplayDate(date) }}
             </span>
+            <div style="margin-left:10px;color:#666; white-space: nowrap;">
+              未来一周可预约
+          </div>
+          </div>
+          
         </div>
-        </div>
+        
         <el-card class="Consultant">
         <div>
-          <h2 style="text-align: left; margin-top: 0px;">咨询师列表</h2>
+          <h2 style="text-align: left; margin-top: 0px;">可预约咨询师</h2>
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
         <!-- 修改滚动区域 -->
         <div style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
-        <el-row 
+        <el-row  v-if="consultants.length > 0"
           :gutter="9" 
           style="flex: 1; min-height: min-content; display: flex; flex-wrap: wrap; "
         >
@@ -27,7 +52,7 @@
             :span="8" 
             v-for="consultant in consultants" 
             :key="consultant.consultantId"
-            @click.native="goToConsultant(consultant.consultantId, consultant.name)"
+            @click.native="goToConsultant(consultant.consultantId, consultant.name,consultant.professionalInfo)"
             style="margin-bottom: 15px; box-sizing: border-box;" 
           >
             <el-card 
@@ -45,6 +70,26 @@
             </el-card>
           </el-col>
         </el-row>
+
+        <!-- 当没有咨询师时显示提示 -->
+        <div 
+          v-else
+          style="
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f2f1e4;;
+            border-radius: 20px;
+            margin: 10px;
+            padding: 20px;
+          "
+        >
+          <div style="text-align: center; color: #666;">
+            <p style="font-size: 30px; margin-bottom: 10px;">当前咨询师已下班</p>
+            <p style="font-size: 30px;">上班时间为 8:00-17:00</p>
+          </div>
+        </div>
       </div>
       </el-card>
         
@@ -107,7 +152,7 @@
         </div>
           <div class="rili">
             <!-- <calendar /> -->
-            <MySchedule/>
+            <MyScheduleHome />
           </div>
         </div>
     
@@ -119,7 +164,7 @@
 <script>
 //import calendar from '../../components/calendar.vue';
 //import { DepthTexture } from 'three';
-import MySchedule from '../../components/MySchedule.vue';
+import MyScheduleHome from '../../components/MyScheduleHome.vue';
 
 export default {
   filters: {
@@ -135,7 +180,7 @@ export default {
   },
   components: {
     //calendar // 注册组件
-    MySchedule
+    MyScheduleHome
   },
   data() {
     return {
@@ -148,6 +193,7 @@ export default {
       dateOptions: [], // 七天的日期列表
       consultants: [],
       tableData: [],
+      appointmentsList: [],
       filters: {
         startDate: null,
         endDate: null,
@@ -157,14 +203,14 @@ export default {
   },
   mounted() { 
     this.generateDateOptions();
-    this.selectedDate = this.dateOptions[0]; 
-    this.fetchConsultants(this.dateOptions[0]);
+    this.selectedDate = '现在在线'; 
+    this.fetchConsultants(this.selectedDate);
     this.fetchAppointments();
   },
   methods: {
     async generateDateOptions() {     
       const today = new Date(); // 固定为题目中的日期
-      this.dateOptions.push('现在在线');
+      //this.dateOptions.push('现在在线');
       for (let i = 1; i < 7; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + i);
@@ -176,6 +222,7 @@ export default {
       if(date==='现在在线'){
         return this.formatDate(new Date());
       }
+      else return date;
     },
     async fetchConsultants(availableDate) {
       try {
@@ -216,6 +263,7 @@ export default {
         this.tableData = rawData.filter(item => {
           return item.appointmentDate >= today; // 只保留 appointmentDate 大于等于今天的记录
         });
+        this.appointmentsList = rawData.filter(item => item.status !== 'canceled');
         });
       } catch (error) {
         this.$message.error('获取预约数据失败')
@@ -290,11 +338,12 @@ export default {
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios
         .post("/user/cancel", {
+          appointmentId: parseInt(appointmentId, 10),
+          cancellationReason: cancellationReason
+        },{
           headers: {
             token:this.token, // 获取 JWT Token
-          },
-          appointmentId: parseInt(appointmentId, 10),
-          cancellationReason: cancellationReason,
+          }
         })
         .then(response=> {
           if(response.data.code==="1"){
@@ -327,17 +376,23 @@ export default {
       this.closeCancelModal(); // 关闭模态框
     },
   
-  goToConsultant(id, name) {
-    this.$router.push({
-      path: `/consultant/${id}`,
-      query: { name: name ,appselectedTime:this.selectedDate} // 通过查询参数传递 name
-    });
-  }
+    goToConsultant(id, name, info) {
+      // 将参数存储到sessionStorage
+      sessionStorage.setItem('consultantData', JSON.stringify({
+        name: name,
+        appselectedTime: this.selectedDate,
+        info: info
+      }));
+      
+      // 跳转时只传递ID
+      this.$router.push(`/consultant/${id}`);
+    }
   },
 };
 </script>
 
 <style scoped>
+
 .custom-header th {
   background-color: #f5e7da !important;
   color: #5c3317 !important;
@@ -372,21 +427,38 @@ export default {
 }
 .date-item {
   font-size: 16px;
-    padding: 5px 10px;
-    border-radius: 5px;
-    background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background-color: #f2f1e4;
+  border:solid 1px #5c3317;
+  flex-shrink: 0;
 }
 .date-item.selected {
     background-color: #5c3317;
-    color: white;
+    color: #f2f1e4;
+}
+.label {
+  width: 100%; /* 占满父容器宽度 */
+  display: flex;
+  flex-direction: column; /* 垂直排列子元素 */
 }
 .category-selector {
   display: flex;
   align-items: center;
-  border-radius: 20px;
-  background-color: white;
-  padding: 20px;
-  border: 2px solid #7a3b10; /* 宽度、样式、颜色 */
+  padding: 10px;
+  border-radius: 20px;;
+  /* border: 2px solid #7a3b10; */
+  background-color: #f2f1e4;
+  width: 100%; /* 继承父容器宽度 */
+}
+.category-selector2 {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 0 0 10px 10px;
+  border-top: 2px dashed #7a3b10;
+  background-color: #f2f1e4;
+  width: 100%; /* 继承父容器宽度 */
 }
 .container {
   display: flex;
@@ -398,14 +470,20 @@ export default {
   width: 100%; /* 占满父容器宽度 */
 }
 .conseler{
-  margin-top: 10px;
+  /* margin-top: 10px; */
   width:70%;
+  display:flex;
+  flex-direction: column;
 }
 
 .label {
-  margin-right: 10px;
-  font-size:20px;
-  width: 10%;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border: 2px solid #7a3b10;
+  border-radius: 20px;
+  background-color: #f2f1e4;
+  width: 97%; /* 继承父容器宽度 */
 }
 
 .selected-item {

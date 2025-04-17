@@ -3,7 +3,7 @@ import VueRouter from 'vue-router';
 import Layout from '../views/Layout.vue';
 import ConsultantDetail from '@/components/ConsultantDetail.vue';
 import MySchedule from '../components/MySchedule.vue';
-
+import Chat from '../components/Chat.vue';
 Vue.use(VueRouter);
 
 const routes = [
@@ -47,9 +47,9 @@ const routes = [
         ],
     },
     {
-        path: '/chat',
+        path: '/chat/:appointmentId',
         name: 'Chat',
-        component: () => import('../views/Chat.vue'),
+        component:Chat,
     },
     {
         path: '/consultant/:id',
