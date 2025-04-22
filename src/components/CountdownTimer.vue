@@ -1,7 +1,11 @@
-<!-- /src/components/CountdownTimer.vue -->
 <template>
-  <div class="countdown-timer" :class="{ 'blink': shouldBlink }">
-    {{ formattedTime }}
+  <div>
+    <div class="countdown-timer" :class="{ 'blink': shouldBlink }">
+      {{ formattedTime }}
+    </div>
+    <div v-if="remainingTime <= warningThreshold && remainingTime > 0" class="warning-text">
+      咨询马上结束，请注意时间
+    </div>
   </div>
 </template>
 
@@ -9,14 +13,17 @@
 export default {
   props: {
     initialTime: {
-      type: Number, // 分钟数
+      type: Number,
       default: 60
     }
   },
   data() {
     return {
-      remainingTime: this.initialTime * 60, // 转换为秒
-      shouldBlink: false
+      remainingTime: 0,
+      shouldBlink: false,
+      warningThreshold: 10 * 60, // 10分钟
+      timer: null,
+      endTimeKey: 'chatEndTime'
     }
   },
   computed: {
@@ -28,25 +35,37 @@ export default {
   },
   watch: {
     remainingTime(newVal) {
+      // 小于等于1分钟或5分钟时闪烁
       if (newVal === 5 * 60 || newVal === 60) {
         this.triggerBlink()
       }
     }
   },
   mounted() {
+    // 初始化结束时间
+    let endTime = localStorage.getItem(this.endTimeKey)
+    if (!endTime) {
+      const now = Date.now()
+      endTime = now + this.initialTime * 60 * 1000
+      localStorage.setItem(this.endTimeKey, endTime)
+    }
+    this.updateRemaining(+endTime)
     this.timer = setInterval(() => {
-      if (this.remainingTime > 0) {
-        this.remainingTime--
-      } else {
-        clearInterval(this.timer)
-        this.$emit('time-up')
-      }
+      this.updateRemaining(+endTime)
     }, 1000)
   },
   beforeDestroy() {
     clearInterval(this.timer)
   },
   methods: {
+    updateRemaining(endTime) {
+      const seconds = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
+      this.remainingTime = seconds
+      if (seconds === 0) {
+        clearInterval(this.timer)
+        this.$emit('time-up')
+      }
+    },
     triggerBlink() {
       this.shouldBlink = true
       setTimeout(() => {
@@ -70,5 +89,11 @@ export default {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+.warning-text {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #e6a23c;
 }
 </style>

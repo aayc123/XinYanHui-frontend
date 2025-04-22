@@ -122,25 +122,25 @@ export default {
     async fetchAppointments() {
       try {
         const response = await this.$axios.get("/user/appointments", {
-          headers: {
-            token:this.token, // 获取 JWT Token
-          },
+          headers: { token: this.token },
           params: { userId: parseInt(this.userId, 10) },
         });
         if (response.data.code === "1") {
-          this.appointments = response.data.data.filter(
-            (app) => app.status !== "canceled"
-          );
+          // 先过滤，再根据 appointmentDate 降序排序（最近的在前）
+          this.appointments = response.data.data
+            .filter(app => app.status !== "canceled")
+            .sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
         } else {
-          this.appointments = []; // 确保清空数据
+          this.appointments = [];
         }
       } catch (error) {
         this.$message.error("获取预约数据失败");
         this.appointments = [];
       } finally {
-        this.generateMonthData(this.selectedMonth); // 确保无论成功失败都生成月份
+        this.generateMonthData(this.selectedMonth);
       }
     },
+
     async generateMonth(){
       const monthRange = [];
       monthRange[0] = new Date().getMonth() + 1;

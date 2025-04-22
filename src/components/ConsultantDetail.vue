@@ -45,7 +45,7 @@
                   <template v-if="selectedDate === 'now'">
                     <el-button 
                       type="text"
-                      @click="GotoChat(scope.row)"
+                      @click="GotoChat(scope.row,1)"
                     >
                       进入对话
                     </el-button>
@@ -169,20 +169,19 @@ export default {
       }
     },
     // 进入聊天
-    GotoChat(row) {
-      this.$router.push({
-        // sessionStorage.setItem('consultantData', JSON.stringify({
-        // name: name,
-        // appselectedTime: this.selectedDate,
-        // info: info
-        // }));
-        path: '/chat',
-        query: {
-          consultantId: this.consultantId,
-          consultantName: this.consultantName,
-          appointmentDate:row.time
-        }
-      });
+    GotoChat(row,id) {
+        // 构造完整的 URL
+        const chatUrl = this.$router.resolve({
+            path: `/chat/${id}`,
+            query: {
+                consultantId: this.consultantId,
+                consultantName: this.consultantName,
+                appointmentDate: row.time,
+            },
+        }).href;
+
+        // 在新窗口中打开页面
+        window.open(chatUrl, '_blank');
     },
     // 创建预约
     async createConsultation(row) {

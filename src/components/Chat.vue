@@ -1,4 +1,3 @@
-<!-- /src/views/Chat.vue -->
 <template>
   <div class="chat-container">
     <!-- 顶部导航栏 -->
@@ -15,7 +14,9 @@
 
     <!-- 主聊天区域 -->
     <chat-container :messages="messages" class="main-chat" />
-    <ChatMessages />
+    <!-- 消息输入区 -->
+    <chat-messages @send-message="addMessage" />
+
     <!-- 历史记录侧边栏 -->
     <history-sidebar 
       v-model="sidebarVisible"
@@ -28,8 +29,33 @@
       <div class="dialog-content">
         <p>是否确定要结束本次会话？</p>
         <div class="dialog-btns">
-          <button @click="confirmEndSession">确定</button>
+          <button @click="handleShowRating">确定</button>
           <button @click="showConfirm = false">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⭐ 评分弹窗 START -->
+    <div v-if="showRatingDialog" class="confirm-dialog">
+      <div class="dialog-content">
+        <h3>请为本次会话打分</h3>
+        <div class="star-rating">
+          <span 
+            v-for="n in 5" 
+            :key="n" 
+            class="star" 
+            :class="{ filled: n <= rating }" 
+            @click="setRating(n)"
+          >★</span>
+        </div>
+        <textarea 
+          v-model="feedback" 
+          placeholder="留下你的评价（可选）" 
+          class="feedback-box"
+        ></textarea>
+        <div class="dialog-btns">
+          <button @click="submitRating">提交</button>
+          <button @click="showRatingDialog = false">取消</button>
         </div>
       </div>
     </div>
@@ -45,35 +71,82 @@ import HistorySidebar from '@/components/HistorySidebar'
 export default {
   components: {
     ChatContainer,
+    ChatMessages,
     CountdownTimer,
-    HistorySidebar,
-    ChatMessages
+    HistorySidebar
   },
   data() {
     return {
-      messages: [], // 当前会话消息
-      chatHistory: [], // 历史会话记录
+      messages: [],        // 当前会话消息
+      chatHistory: [],     // 历史会话记录
       sidebarVisible: false,
-      showConfirm: false
+      showConfirm: false,
+      showRatingDialog: false,
+      rating: 0,
+      feedback: ''
     }
   },
   methods: {
+    addMessage(content) {
+      this.messages.push({ from: 'user', text: content });
+      // TODO: 后续可添加机器人回复逻辑
+    },
     handleTimeUp() {
-      // 时间用完的处理逻辑
-      alert('本次咨询时间已到，即将结束会话')
+      alert('本次咨询时间已到，即将结束会话');
+      this.confirmEndSession();
+    },
+    handleShowRating() {
+      this.showConfirm = false;
+      this.showRatingDialog = true;
+    },
+    setRating(n) {
+      this.rating = n;
+    },
+    submitRating() {
+      //console.log('评分:', this.rating);
+      //console.log('评价:', this.feedback);
+      localStorage.removeItem('chatEndTime');
+      this.$router.push('/');
     },
     confirmEndSession() {
-      // 结束会话逻辑
-      this.showConfirm = false
-      this.$router.push('/')
+      // 清理 localStorage 中的结束时间
+      localStorage.removeItem('chatEndTime');
+      this.showConfirm = false;
+      this.$router.push('/');
     }
   }
 }
 </script>
 
 <style scoped>
+.star-rating {
+  margin: 10px 0;
+  font-size: 24px;
+  display: flex;
+  justify-content: center;
+}
+.star {
+  cursor: pointer;
+  color: #ccc;
+  transition: color 0.2s;
+  margin: 0 4px;
+}
+.star.filled {
+  color: #f7ba2a;
+}
+.feedback-box {
+  width: 100%;
+  min-height: 80px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  font-size: 14px;
+}
 .chat-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   position: relative;
 }
@@ -93,6 +166,15 @@ export default {
   z-index: 1000;
 }
 
+.end-session-btn {
+  background: #409EFF;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 .main-chat {
   flex: 1;
   margin-top: 60px;
@@ -101,19 +183,7 @@ export default {
 }
 
 .history-sidebar {
-  width: 300px;
-  height: 100vh;
-  position: fixed;
-  right: 0;
   top: 60px;
-  background: #fff;
-  box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-}
-
-.history-sidebar.open {
-  transform: translateX(0);
 }
 
 .confirm-dialog {

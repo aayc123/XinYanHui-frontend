@@ -4,6 +4,8 @@ import Layout from '../views/Layout.vue';
 import ConsultantDetail from '@/components/ConsultantDetail.vue';
 import MySchedule from '../components/MySchedule.vue';
 import Chat from '../components/Chat.vue';
+import settings from '../components/settings.vue';
+//import { set } from 'core-js/core/dict';
 Vue.use(VueRouter);
 
 const routes = [
@@ -40,6 +42,14 @@ const routes = [
                 path: 'schedule', // 我的咨询
                 name: 'Schedule',
                 component: MySchedule,
+                // meta: {
+                //     isLogin: true
+                // }
+            },
+            {
+                path: 'settings', // 我的咨询
+                name: 'settings',
+                component: settings,
                 // meta: {
                 //     isLogin: true
                 // }
