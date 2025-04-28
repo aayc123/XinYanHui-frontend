@@ -121,7 +121,8 @@ export default {
         if (response.data.code === "1") {
           this.appointments = response.data.data.filter(
             (app) => app.status !== "canceled"
-          );
+            
+          ).sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
           
         } else {
           this.appointments = []; // 确保清空数据

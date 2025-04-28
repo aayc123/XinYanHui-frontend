@@ -69,6 +69,37 @@
       </el-row>
     </el-card>
     <p v-else>咨询师信息未找到。</p>
+    <el-dialog
+      title="心理咨询保密协议书"
+      :visible.sync="showProtocolDialog"
+      width="600px"
+    >
+      <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px">
+        <h3>一、保密内容</h3>
+        <p>心理咨询师本着尊重、保护来访者个人隐私的态度，对心理咨询过程中的有关信息，包括个案记录、测验资料、信件、录音和其他资料，均属专业信息，都将在严格保密的情况下进行保存。同时，心理咨询师还必须严格遵守职业道德中保密原则的有关规定，严守咨询个案的相关资料。</p>
+        
+        <h3>二、查阅权限</h3>
+        <p>上述保密资料，除华东师范大学心理研究院，任何人均不得查阅。</p>
+        
+        <h3>三、录音授权</h3>
+        <p>心理咨询师只有在征得来访者同意的情况下才能对咨询过程进行笔录、录音。</p>
+      </div>
+
+      <div style="display: flex; align-items: center; margin-top: 20px">
+        <el-checkbox v-model="agreeProtocol">我已阅读并同意此协议</el-checkbox>
+      </div>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showProtocolDialog = false">取 消</el-button>
+        <el-button 
+          type="primary" 
+          @click="confirmGotoChat"
+          :disabled="!agreeProtocol"
+        >
+          确 定
+        </el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -83,6 +114,9 @@ export default {
       consultantInfo:'',
       dateGroups: [],  // 分组后的日期数据
       selectedDate: '', // 当前选中的日期
+      showProtocolDialog: false,
+      agreeProtocol: false,
+      selectedRow: null, // 保存当前选中的时间段
     };
   },
   computed: {
@@ -169,19 +203,29 @@ export default {
       }
     },
     // 进入聊天
-    GotoChat(row,id) {
-        // 构造完整的 URL
-        const chatUrl = this.$router.resolve({
-            path: `/chat/${id}`,
-            query: {
-                consultantId: this.consultantId,
-                consultantName: this.consultantName,
-                appointmentDate: row.time,
-            },
-        }).href;
+    GotoChat(row) {
+      this.selectedRow = row; // 保存选中的时间段
+      this.showProtocolDialog = true; // 显示协议弹窗
+    },
+    confirmGotoChat() {
+      if (!this.agreeProtocol) {
+        this.$message.warning('请先阅读并同意协议');
+        return;
+      }
 
-        // 在新窗口中打开页面
-        window.open(chatUrl, '_blank');
+      this.showProtocolDialog = false;
+      const id = 1; // 根据实际情况调整
+      const chatUrl = this.$router.resolve({
+        path: `/chat/${id}`,
+        query: {
+          consultantId: this.consultantId,
+          consultantName: this.consultantName,
+          appointmentDate: this.selectedRow.time,
+        },
+      }).href;
+
+      window.open(chatUrl, '_blank');
+      this.agreeProtocol = false; // 重置协议状态
     },
     // 创建预约
     async createConsultation(row) {

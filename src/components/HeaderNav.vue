@@ -3,14 +3,14 @@
         <img src="../assets/icon.png" alt="这是一个图标" class="pic">
 
         <el-menu 
-        :default-active="$store.state.activeMenu" mode="horizontal" 
-        active-text-color="#B886F8" class="nav"
-        router
+        :default-active="activeMenu"  mode="horizontal" 
+        active-text-color="#8B4513" class="nav"
+        
         >
             <el-menu-item index="/">首页</el-menu-item>
-            <el-menu-item index="/film">心理测试</el-menu-item>
-            <el-menu-item index="/cinema">AI对话</el-menu-item>
-            <el-menu-item index="/myfilm">阅读天地</el-menu-item>
+            <el-menu-item index="/film"  @click.native="handleClick">心理测试</el-menu-item>
+            <el-menu-item index="/cinema"  @click.native="handleClick">AI对话</el-menu-item>
+            <el-menu-item index="/myfilm"  @click.native="handleClick">阅读天地</el-menu-item>
             <el-submenu index="user" class="user-menu">
                 <template slot="title">{{ User }}</template>
                 <el-menu-item @click="personalbar">个人主页</el-menu-item>
@@ -50,7 +50,7 @@
 }
 
 .el-menu-item.is-active {
-    color: #8B4513 !important;
+    color: #8B4513;
 }
 
 .user-menu {
@@ -67,11 +67,18 @@
 export default {
     data(){
         return{
-            active:"/",
+            activeMenu: "/",
             User:localStorage.getItem('username')
         }
     },
     methods: {
+        handleClick() {
+            // 提示信息
+            this.$message({
+                message: "正在开发，敬请期待！",
+                type: "warning",
+            });
+        },
         LogoutHeadle(){
             localStorage.removeItem('LoginState');
             localStorage.removeItem('username');

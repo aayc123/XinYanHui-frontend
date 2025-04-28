@@ -260,7 +260,7 @@ export default {
         let rawData = response.data.data;
         // 过滤掉 appointmentDate 早于今天的记录
         const today = new Date().toISOString().split('T')[0]; // 获取今天的日期（格式：YYYY-MM-DD）
-        this.tableData = rawData.filter(item => {
+        this.tableData = rawData.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)).filter(item => {
           return item.appointmentDate >= today; // 只保留 appointmentDate 大于等于今天的记录
         });
         this.appointmentsList = rawData.filter(item => item.status !== 'canceled');
