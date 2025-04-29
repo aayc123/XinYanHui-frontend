@@ -43,7 +43,7 @@
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
         <!-- 修改滚动区域 -->
-        <div style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
+        <div style="height: 480px; overflow-y: hidden; display: flex; flex-direction: column;overflow-x: hidden;">
         <el-row  v-if="consultants.length > 0"
           :gutter="9" 
           style="flex: 1; min-height: min-content; display: flex; flex-wrap: wrap; "
@@ -103,7 +103,7 @@
               <div slot="header" class="clearfix" style="background: #8B4513; border-radius: 4px; padding: 10px 20px;">
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
-              <div class="meeting-roll" style="height:200px;overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
+              <div class="meeting-roll" style="height:200px;overflow-y: hidden; display: flex; flex-direction: column;overflow-x: hidden;">
               <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%;flex:1" header-row-class-name="custom-header" height="100%">
                 <!-- 合并预约日期和时间 -->
                 <el-table-column label="预约时间" width="170" height="10%">
@@ -558,7 +558,7 @@ export default {
 
 .latest-meeting .el-table {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 /* 保证表格头固定 */
@@ -598,7 +598,7 @@ export default {
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
 }
 ::-webkit-scrollbar-track {
   background: #f5e7da;
@@ -607,6 +607,13 @@ export default {
 ::-webkit-scrollbar-thumb {
   background: #8B4513;
   border-radius: 4px;
+}
+.meeting-roll {
+  height: 200px;
+  overflow-y: hidden; /* 改为 hidden */
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
 }
 .meeting-roll ::-webkit-scrollbar {
   width: 8px;

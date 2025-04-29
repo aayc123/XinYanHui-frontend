@@ -7,7 +7,7 @@
             <p>咨询师简介：{{ consultantInfo }}</p>
             
     </div>
-    <el-card v-if="consultantId">
+    <el-card v-if="consultantId"> 
       <el-row :gutter="20">
         <!-- 左侧日期列 -->
         <el-col :span="6">
@@ -195,8 +195,11 @@ export default {
 
       // 转换并排序日期
       this.dateGroups = Object.values(groups)
-        .sort((a, b) => a.date === 'now' ? -1 : b.date.localeCompare(a.date));
-      
+        .sort((a, b) => {
+          if (a.date === 'now') return -1; // 'now' 日期排在最前面
+          if (b.date === 'now') return 1; // 'now' 日期排在最前面
+          b.date === 'now' ? -1 : a.date.localeCompare(b.date);
+        })
       // 默认选中第一个日期
       if (this.dateGroups.length > 0) {
         this.selectedDate = this.appselectedTime==='现在在线'? this.dateGroups[0].date:this.appselectedTime;
@@ -264,6 +267,9 @@ export default {
   padding: 10px;
   border-right: 1px solid #ebeef5;
   width: 80%;
+}
+.el-button+.el-button {
+  margin-left:0px;
 }
 .custom-header th {
   background-color: #f5f7fa;

@@ -148,7 +148,9 @@ export default {
         const month=new Date().getMonth() + 1-i;
         monthRange.push(month);
       }
+      const monn=new Date().getMonth()+2;
       this.monthRange = monthRange.reverse(); // 反转数组以显示从当前月份到过去三个月的顺序
+      this.monthRange.push(monn);  
     },
     onDateClick(date){
       this.selectedMonth=date;
