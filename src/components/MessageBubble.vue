@@ -1,11 +1,24 @@
 <template>
-  <div class="message-bubble" 
+  <div class="message-container" 
        :class="{
-         'user-message': message.from === 'user',
-         'system-message': message.System  // 新增系统消息样式
+         'user-container': message.from === 'user',
+         'system-container': message.from === 'system'
        }">
-    <div class="content">{{ message.text }}</div>
-    <div class="timestamp">{{ message.time }}</div>
+    <!-- 非系统消息显示头像 -->
+    <div class="avatar" v-if="message.from !== 'system'">
+      <span v-if="!message.avatar">{{ messageAvatar }}</span>
+      <img v-else :src="src/assets/head2.jpg" alt="avatar">
+    </div>
+
+    <div class="message-bubble" 
+         :class="{
+           'user-message': message.from === 'user',
+           'system-message': message.from === 'system'
+         }">
+      <div class="content">{{ message.text }}</div>
+      <div class="timestamp">{{ message.time }}</div>
+    </div>
+
   </div>
 </template>
 
@@ -16,43 +29,97 @@ export default {
       type: Object,
       required: true
     }
+  },
+  computed: {
+    // 生成头像占位文字（取发送者首字母）
+    messageAvatar() {
+      return this.message.from.charAt(0).toUpperCase()
+    }
   }
 }
 </script>
 
 <style scoped>
+.message-container {
+  display: flex;
+  gap: 12px;
+  max-width: 85%;
+  margin: 8px 0;
+  align-items: flex-start;
+}
 
-/* 用户消息样式 */
+/* 用户消息容器（头像在右侧） */
+.user-container {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+/* 系统消息容器 */
+.system-container {
+  margin: 8px auto;
+  max-width: 100%;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.message-bubble {
+  /* 原有样式保持不变 */
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 15px;
+  word-break: break-word;
+  position: relative;
+}
+
+/* 调整消息最大宽度 */
+.user-message {
+  max-width: calc(100% - 60px); /* 留出头像空间 */
+}
+
+/* 系统消息隐藏头像 */
+.system-container .avatar {
+  display: none;
+}
+
+/* 原有消息颜色样式保持不变 */
 .user-message {
   background: #409EFF;
   color: white;
   border-radius: 15px 5px 15px 15px;
 }
 
-/* 系统消息修正 */
 .system-message {
-  background: #e8e8e8;
+  background: #f7f3f3;
   color: #666;
-  max-width: 80%;  /* 调整为更宽的比例 */
-  text-align: center;
   border-radius: 20px;
-  display: block;  /* 关键属性 */
-  margin: 0 auto !important;  /* 强制居中 */
-}
-.message-bubble {
-  max-width: 70%;
-  padding: 12px 16px;
-  border-radius: 15px;
-  background: #f1f0f0;
-  margin: 5px 0;
-  word-break: break-word;
 }
 
-/* 非用户消息样式 */
+/* 其他消息样式调整 */
 .message-bubble:not(.user-message):not(.system-message) {
   border-radius: 5px 15px 15px 15px;
+  background-color: aliceblue;
+  max-width: calc(100% - 60px); /* 留出头像空间 */
 }
 
+/* 时间戳样式保持不变 */
 .timestamp {
   font-size: 0.75rem;
   color: #666;
@@ -61,7 +128,7 @@ export default {
 }
 
 .system-message .timestamp {
-  text-align: center;  /* 系统消息时间居中 */
+  text-align: center;
   color: #999;
 }
 

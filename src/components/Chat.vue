@@ -179,11 +179,12 @@ export default {
 
     handleIncomingMessage(response) {
       const newMessage = {
-        from: response.isSystem ? 'system' : 'bot',
+        from: response.system? 'system' : 'consultant',
         text: response.msg,
         time: dayjs(response.time).format('HH:mm:ss'),
         status: 'received'
       }
+      //alert(response.system)
       this.messages.push(newMessage)
     },
 

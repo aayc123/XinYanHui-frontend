@@ -6,9 +6,10 @@
       class="message-row"
       :class="{
         'user-message': msg.from === 'user',
-        'system-message': msg.System  // 新增系统消息样式
+        'system-message': msg.from === 'system'  // 新增系统消息样式
       }"
     >
+
       <message-bubble :message="msg" />
     </div>
   </div>
