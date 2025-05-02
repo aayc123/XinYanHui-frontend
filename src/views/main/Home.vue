@@ -43,7 +43,7 @@
           <p style="text-align: left; color: grey;">点击咨询师头像查看详情</p>
         </div>
         <!-- 修改滚动区域 -->
-        <div style="height: 480px; overflow-y: hidden; display: flex; flex-direction: column;overflow-x: hidden;">
+        <div style="height: 480px; overflow-y: auto; display: flex; flex-direction: column;overflow-x: hidden;">
         <el-row  v-if="consultants.length > 0"
           :gutter="9" 
           style="flex: 1; min-height: min-content; display: flex; flex-wrap: wrap; "
@@ -63,7 +63,7 @@
                     --el-card-border-color: #7a3b10;"
             >
               <div style="text-align: center">
-                <img src="../../assets/head.png" style="width: 100px; height: 100px; border-radius: 50%">
+                <img src="../../assets/head.jpg" style="width: 100px; height: 100px; border-radius: 50%">
                 <p>{{ consultant.name }}</p>
                 <p>{{ consultant.professionalInfo }}</p>
               </div>
@@ -125,7 +125,7 @@
                     <el-button 
                       v-if="scope.row.status === 'ready'" 
                       type="text" 
-                      @click="startConsultation(scope.row)"
+                      @click="gotoChat(scope.row)"
                       :disabled="!isAppointmentActive(scope.row)">
                       开始咨询
                     </el-button>
@@ -157,7 +157,37 @@
         </div>
     
     </el-container>
-  
+    <el-dialog
+      title="心理咨询保密协议书"
+      :visible.sync="showProtocolDialog"
+      width="600px"
+    >
+      <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px">
+        <h3>一、保密内容</h3>
+        <p>心理咨询师本着尊重、保护来访者个人隐私的态度，对心理咨询过程中的有关信息，包括个案记录、测验资料、信件、录音和其他资料，均属专业信息，都将在严格保密的情况下进行保存。同时，心理咨询师还必须严格遵守职业道德中保密原则的有关规定，严守咨询个案的相关资料。</p>
+        
+        <h3>二、查阅权限</h3>
+        <p>上述保密资料，除华东师范大学心理研究院，任何人均不得查阅。</p>
+        
+        <h3>三、录音授权</h3>
+        <p>心理咨询师只有在征得来访者同意的情况下才能对咨询过程进行笔录、录音。</p>
+      </div>
+
+      <div style="display: flex; align-items: center; margin-top: 20px">
+        <el-checkbox v-model="agreeProtocol">我已阅读并同意此协议</el-checkbox>
+      </div>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showProtocolDialog = false">取 消</el-button>
+        <el-button 
+          type="primary" 
+          @click="confirmGotoChat"
+          :disabled="!agreeProtocol"
+        >
+          确 定
+        </el-button>
+      </span>
+    </el-dialog>
   </el-container>
 </template>
 
@@ -190,9 +220,11 @@ export default {
       leaveReason: "", // 用户填写的取消理由
       currentAppointmentId: null, // 当前要取消的预约 ID
       selectedDate: '', // 当前选中的日期
+      selectedrow:null,
       dateOptions: [], // 七天的日期列表
       consultants: [],
       tableData: [],
+      showProtocolDialog:false,
       appointmentsList: [],
       filters: {
         startDate: null,
@@ -320,20 +352,43 @@ export default {
         item.active = item.command === command; // 将当前项标记为 active，其他项取消 active
       });
     },
-    startConsultation(row) {
-      if (!this.isAppointmentActive(row)) {
-        this.$message.warning('当前时间不在预约时间内，无法开始咨询');
+   // 进入聊天
+   GotoChat(row) {
+      this.selectedrow=row;
+      this.showProtocolDialog = true; // 显示协议弹窗
+    },
+    confirmGotoChat() {
+      if (!this.agreeProtocol) {
+        this.$message.warning('请先阅读并同意协议');
         return;
       }
-      // 跳转到咨询页面或执行其他逻辑
-      this.$router.push({
-        path: '/chat',
-        query: {
-          appointmentId: row.appointmentId,
-          consultantId: row.consultantId,
-          startTime: `${row.appointmentDate} ${row.appointmentTime}`
+    
+      this.showProtocolDialog = false;
+      try {
+        const res =  this.$axios.get('/user/session',{
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
+          params:{appointmentId:this.selectedrow.appointmentId},
+        });
+        if (res.data.code === "1") {
+          const id=res.data.data.sessionId;
+          alert(id)
+          const chatUrl = this.$router.resolve({
+            path: `/chat/${id}`,
+            query: {
+              consultantId: res.data.data.consultantId,
+            },
+          }).href;
+
+          window.open(chatUrl, '_blank');
+          this.agreeProtocol = false; // 重置协议状态
+        } else {
+          this.$message.error(res.data.msg);
         }
-      });
+      } catch (error) {
+        this.$message.error('预约失败');
+      }
     },
     cancelAppointment(appointmentId, cancellationReason) {
       this.$axios

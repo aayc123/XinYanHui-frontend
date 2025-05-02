@@ -14,66 +14,85 @@ export default {
   props: {
     initialTime: {
       type: Number,
-      default: 60
+      required: true
+    },
+    sessionId: {
+      type: [String, Number],
+      required: true
     }
   },
   data() {
     return {
-      remainingTime: 0,
+      remainingTime: this.initialTime, // 使用传入的 initialTime 初始化
       shouldBlink: false,
       warningThreshold: 10 * 60, // 10分钟
       timer: null,
-      endTimeKey: 'chatEndTime'
-    }
+      currentEndTime: Date.now() + this.initialTime * 1000 // 初始结束时间
+    };
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.remainingTime / 60)
-      const seconds = this.remainingTime % 60
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`
+      const minutes = Math.floor(this.remainingTime / 60);
+      const seconds = this.remainingTime % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    },
+    endTimeKey() {
+      return `countdown_${this.sessionId}`;
     }
   },
   watch: {
     remainingTime(newVal) {
-      // 小于等于1分钟或5分钟时闪烁
       if (newVal === 5 * 60 || newVal === 60) {
-        this.triggerBlink()
+        this.triggerBlink();
       }
+    },
+    sessionId() {
+      this.initializeTimer();
     }
   },
   mounted() {
-    // 初始化结束时间
-    let endTime = localStorage.getItem(this.endTimeKey)
-    if (!endTime) {
-      const now = Date.now()
-      endTime = now + this.initialTime * 60 * 1000
-      localStorage.setItem(this.endTimeKey, endTime)
-    }
-    this.updateRemaining(+endTime)
-    this.timer = setInterval(() => {
-      this.updateRemaining(+endTime)
-    }, 1000)
+    this.initializeTimer();
   },
   beforeDestroy() {
-    clearInterval(this.timer)
+    clearInterval(this.timer);
   },
   methods: {
-    updateRemaining(endTime) {
-      const seconds = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
-      this.remainingTime = seconds
+    initializeTimer() {
+      clearInterval(this.timer);
+
+      let endTime = localStorage.getItem(this.endTimeKey);
+
+      if (!endTime) {
+        endTime = Date.now() + this.initialTime * 1000;
+        localStorage.setItem(this.endTimeKey, endTime);
+      }
+
+      this.currentEndTime = parseInt(endTime, 10);
+      this.updateRemaining();
+      this.timer = setInterval(this.updateRemaining, 1000);
+    },
+    updateRemaining() {
+      const now = Date.now();
+      const seconds = Math.max(0, Math.floor((this.currentEndTime - now) / 1000));
+      this.remainingTime = seconds;
+
       if (seconds === 0) {
-        clearInterval(this.timer)
-        this.$emit('time-up')
+        this.handleTimeExpired();
       }
     },
+    handleTimeExpired() {
+      clearInterval(this.timer);
+      localStorage.removeItem(this.endTimeKey);
+      this.$emit('time-up');
+    },
     triggerBlink() {
-      this.shouldBlink = true
+      this.shouldBlink = true;
       setTimeout(() => {
-        this.shouldBlink = false
-      }, 2000)
+        this.shouldBlink = false;
+      }, 2000);
     }
   }
-}
+};
 </script>
 
 <style scoped>

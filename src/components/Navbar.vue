@@ -4,9 +4,24 @@
         <img src="@/assets/icon.png" alt="Logo" class="icon" />
         <span class="title">心研汇</span>
     </div>
+    <button @click="gotoHome" class="return">回到首页</button>
     </div>
   </template>
-  
+ <script>
+ export default {
+     data(){
+         return{
+             activeMenu: "/",
+             User:localStorage.getItem('username')
+         }
+     },
+     methods: {
+         gotoHome() {
+             this.$router.push('/home'); // 跳转到首页
+         }
+     },
+ }
+ </script>
   <style scoped>
   .navbar {
     width: 100%;
@@ -26,7 +41,16 @@
     display: flex;
     align-items: center;
   }
-
+  .return{
+    background-color: #8B4513; /* 设置按钮背景色 */
+    color: white; /* 设置按钮文字颜色 */
+    border: none; /* 去掉边框 */
+    padding: 10px 10px; /* 设置内边距 */
+    border-radius: 5px; /* 设置圆角 */
+    cursor: pointer; /* 鼠标悬停时显示手型光标 */
+    font-size: 13px; /* 设置字体大小 */
+    margin-right: 50px;
+  }
   .icon {
     width: 40px; /* 设置图标宽度 */
     height: 40px; /* 设置图标高度 */

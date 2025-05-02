@@ -1,6 +1,11 @@
 <template>
   <div class="chat-input">
-    <textarea v-model="inputText" @keydown.enter.exact.prevent="send" placeholder="输入消息..." />
+    <!-- 修正 self-closing 标签并支持 Shift+Enter 换行 -->
+    <textarea
+      v-model="inputText"
+      @keydown.enter.prevent="onEnter"
+      placeholder="输入消息..."
+    ></textarea>
     <button @click="send" :disabled="!inputText.trim()">发送</button>
   </div>
 </template>
@@ -8,12 +13,28 @@
 <script>
 export default {
   data() {
-    return { inputText: '' }
+    return {
+      inputText: ''
+    }
   },
   methods: {
+    // 处理回车：Shift+Enter 插入换行，纯 Enter 发送
+    onEnter(e) {
+      if (e.shiftKey) {
+        // 插入换行
+        const pos = e.target.selectionStart
+        this.inputText = this.inputText.slice(0, pos) + '\n' + this.inputText.slice(pos)
+        this.$nextTick(() => {
+          e.target.selectionStart = e.target.selectionEnd = pos + 1
+        })
+      } else {
+        this.send()
+      }
+    },
     send() {
-      if (!this.inputText.trim()) return
-      this.$emit('send-message', this.inputText.trim())
+      const text = this.inputText.trim()
+      if (!text) return
+      this.$emit('send-message', text)
       this.inputText = ''
     }
   }
@@ -34,11 +55,14 @@ export default {
 
 .chat-input textarea {
   flex: 1;
-  resize: none;
+  resize: vertical;
   border: 1px solid #ddd;
   border-radius: 4px;
-  height: 40px;
+  min-height: 40px;
+  max-height: 120px;
   padding: 6px;
+  line-height: 1.4;
+  font-size: 14px;
 }
 
 .chat-input button {

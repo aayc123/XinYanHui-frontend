@@ -2,7 +2,7 @@
   <div>
     <h1>咨询师详情</h1>
     <div>
-      <img src="../assets/head.png" style="width: 150px; height: 150px; border-radius: 50%" />
+      <img src="../assets/head.jpg" style="width: 150px; height: 150px; border-radius: 50%" />
             <h2>{{ consultantName }}</h2>
             <p>咨询师简介：{{ consultantInfo }}</p>
             
@@ -215,20 +215,44 @@ export default {
         this.$message.warning('请先阅读并同意协议');
         return;
       }
-
+    
       this.showProtocolDialog = false;
-      const id = 1; // 根据实际情况调整
-      const chatUrl = this.$router.resolve({
-        path: `/chat/${id}`,
-        query: {
-          consultantId: this.consultantId,
-          consultantName: this.consultantName,
-          appointmentDate: this.selectedRow.time,
-        },
-      }).href;
+      const params = new URLSearchParams();
+      params.append('consultantId', this.consultantId);
+      params.append('userId', parseInt(localStorage.getItem('userId')));
+      (async () => {
+        try {
+          const response = await this.$axios.post('/user/session', params, {
+            headers: {
+              'token': this.token,
+              'Content-Type': 'application/x-www-form-urlencoded' // 明确指定内容类型
+            }
+          });
+          
+          // 检查 response 是否有 data 属性，并且 code 是否为 "1"
+          if (response.data && response.data.code === "1") {
+            const id = response.data.data.sessionId;
+            //alert(id); // 调试信息，可以移除或替换为日志记录
+            const chatUrl = this.$router.resolve({
+              path: `/chat/${id}`,
+              query: {
+                consultantId: this.consultantId,
+                consultantName: this.consultantName,
+                appointmentDate: this.selectedRow.time,
+                sessionId:id,
+              },
+            }).href;
 
-      window.open(chatUrl, '_blank');
-      this.agreeProtocol = false; // 重置协议状态
+            window.open(chatUrl, '_blank');
+            this.agreeProtocol = false; // 重置协议状态
+          } else {
+            this.$message.error(response.data.msg || '未知错误');
+          }
+        } catch (error) {
+          //console.error(error); // 在控制台输出详细的错误信息以便调试
+          this.$message.error('预约失败');
+        }
+      })();
     },
     // 创建预约
     async createConsultation(row) {
