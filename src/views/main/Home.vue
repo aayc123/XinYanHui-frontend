@@ -129,8 +129,8 @@
                     <el-button 
                       v-if="scope.row.status === 'ready'" 
                       type="text" 
-                      @click="gotoChat(scope.row)"
-                      :disabled="!isAppointmentActive(scope.row)">
+                      @click="GotoChat(scope.row)"
+                      >
                       开始咨询
                     </el-button>
                     <el-button
@@ -156,7 +156,8 @@
         </div>
           <div class="rili">
             <!-- <calendar /> -->
-            <MyScheduleHome />
+            <MyScheduleHome 
+            :appointments="appointments"/>
           </div>
         </div>
     
@@ -218,6 +219,7 @@ export default {
   },
   data() {
     return {
+      agreeProtocol: false,
       userId: localStorage.getItem('userId'), 
       token: localStorage.getItem('token'), // 获取 JWT Token
       showLeaveModal: false, // 控制模态框显示
@@ -230,6 +232,8 @@ export default {
       tableData: [],
       showProtocolDialog:false,
       appointmentsList: [],
+      appointments:[],
+      chatWindow:null,
       filters: {
         startDate: null,
         endDate: null,
@@ -287,27 +291,55 @@ export default {
     },
     async fetchAppointments() {
       try {
-        this.$axios.get('/user/appointments', {
-          headers: {
-            token:this.token, // 获取 JWT Token
-          },
-          params:{userId:parseInt(this.userId, 10)},
-          }).then(response=>{
-          if (response.data.code !== "1") {
-            //alert('获取预约数据失败：' + response.data.message);
-            return;
-          } 
-          // 获取原始数据
+        const response = await this.$axios.get('/user/appointments', {
+          headers: { token: this.token },
+          params: { userId: parseInt(this.userId, 10) }
+        });
+
+        if (response.data.code !== "1") {
+          if(response.data.msg === "用户预约记录不存在")
+            this.$message("没有预约记录");
+          else
+            this.$message.error('获取预约数据失败：' + response.data.message);
+          return;
+        }
+        this.appointments = response.data.data.filter(
+            (app) => app.status !== "canceled"
+            
+          ).sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
         let rawData = response.data.data;
-        // 过滤掉 appointmentDate 早于今天的记录
-        const today = new Date().toISOString().split('T')[0]; // 获取今天的日期（格式：YYYY-MM-DD）
-        this.tableData = rawData.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)).filter(item => {
-          return item.appointmentDate >= today; // 只保留 appointmentDate 大于等于今天的记录
-        });
+
+        // 今天的日期（YYYY-MM-DD）
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // 当前时间
+        const now = new Date();
+
+        // 先排序再过滤、标记“ready”
+        const processed = rawData
+          .sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate))
+          .filter(item => item.appointmentDate >= todayStr)
+          .map(item => {
+            // 只对 booked 做检查
+            if (item.status === 'booked') {
+              // 构造开始和结束时间
+              const start = new Date(`${item.appointmentDate}T${item.appointmentTime}`);
+              const end   = new Date(start.getTime() + 60 * 60 * 1000);
+              // 如果 now ∈ [start, end)
+              if (now >= start && now <= end) {
+                return { ...item, status: 'ready' };
+              }
+            }
+            // 其余情况保持原状态
+            return item;
+          });
+
+        // 只保留未被取消的列表
+        this.tableData       = processed;
         this.appointmentsList = rawData.filter(item => item.status !== 'canceled');
-        });
+
       } catch (error) {
-        this.$message.error('获取预约数据失败')
+        this.$message.error('获取预约数据失败');
       }
     },
     formatDisplayDate(date) {
@@ -366,7 +398,7 @@ export default {
       this.selectedrow=row;
       this.showProtocolDialog = true; // 显示协议弹窗
     },
-    confirmGotoChat() {
+    async confirmGotoChat() {
       if (!this.agreeProtocol) {
         this.$message.warning('请先阅读并同意协议');
         return;
@@ -374,15 +406,19 @@ export default {
     
       this.showProtocolDialog = false;
       try {
-        const res =  this.$axios.get('/user/session',{
+        const res = await  this.$axios.get('/user/session',{
           headers: {
             token:this.token, // 获取 JWT Token
           },
           params:{appointmentId:this.selectedrow.appointmentId},
         });
         if (res.data.code === "1") {
+          if (this.chatWindow && !this.chatWindow.closed) {
+            this.chatWindow.focus();
+            return;
+          }
           const id=res.data.data.sessionId;
-          //alert(id)
+          //alert(id);
           const chatUrl = this.$router.resolve({
             path: `/chat/${id}`,
             query: {
@@ -390,13 +426,13 @@ export default {
             },
           }).href;
 
-          window.open(chatUrl, '_blank');
+          this.chatWindow=window.open(chatUrl, '_blank');
           this.agreeProtocol = false; // 重置协议状态
         } else {
           this.$message.error(res.data.msg);
         }
       } catch (error) {
-        this.$message.error('预约失败');
+        this.$message.error('创建会话失败');
       }
     },
     cancelAppointment(appointmentId, cancellationReason) {

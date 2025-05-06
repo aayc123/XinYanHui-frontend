@@ -288,37 +288,42 @@ export default {
 
     
     submitRating() {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token');
       const payload = {
         sessionId: this.sessionId,
         rate: this.rating||0,
         feedback: (this.feedback||"").trim()
-      }
+      };
+      //alert(this.rating);
       if(this.rating>0){
         fetch('http://localhost:8080/user/session/evaluate', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'token': token
+          'token': token,
         },
         body: JSON.stringify(payload)
       })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('提交评分失败')
-        }
-        return response.json()
-      })
+      .then(res => res.json())                // ← 把响应体解析成 JSON
       .then(data => {
-        this.$message('评分提交成功:', data)
-        this.cleanupSession()
+        //alert('后端返回', data)
+        if (data.code !== '1') {
+          this.$message.error('提交评分失败')
+        } else {
+          this.$message.success('评分提交成功')
+          this.showRatingDialog = false
+          this.sessionEnded = true
+        }
       })
+      .catch(err => {
+        this.$message.error('提交评分失败，请稍后再试',err)
+      })
+
       .catch(error => {
         this.$message.error('提交评分失败，请稍后再试',error)
         //console.error(error)
       })
       }
-      
       this.cleanupSession()
     },
 
@@ -326,7 +331,9 @@ export default {
       window.removeEventListener('beforeunload', this.confirmBeforeUnload)
       localStorage.removeItem(`countdown_${this.sessionId}`)
       this.cleanupWebSocket()
-      window.close()
+      setTimeout(() => {
+        window.close()
+      }, 500)
     },
 
     confirmEndSession() {

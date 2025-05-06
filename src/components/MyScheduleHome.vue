@@ -89,6 +89,12 @@
 
 <script>
 export default {
+  props: {
+    appointments:{
+      type: Array,
+      required:true,
+    }
+  },
   data() {
     return {
       userId: localStorage.getItem("userId"),
@@ -103,7 +109,7 @@ export default {
       showLeaveModal: false, // 控制模态框显示
       leaveReason: "", // 用户填写的取消理由
       currentAppointmentId: null, // 当前要取消的预约 ID
-      appointments: [],
+
     };
   },
   mounted() {
@@ -226,7 +232,7 @@ export default {
       return `${year}-${month}-${day}`;
     },
     select(app){
-      return app.filter((app) => app.appointmentDate.startsWith("2025-04")).slice(0, 5); 
+      return app.filter((app) => app.appointmentDate.startsWith("2025-05")).slice(0, 5); 
     }
   },
 };

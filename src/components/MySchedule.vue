@@ -73,7 +73,7 @@
       <div class="session-card-container">
         <div class="session-card" v-for="session in filteredSessions" :key="session.sessionId">
           <div class="session-left">
-            <p><strong>{{ formatDate(session.startTime) }}</strong></p>
+            <p><strong>{{session.startTime}}</strong></p>
             <p>{{ session.consultantName}}</p>
           </div>
           <div class="session-right">

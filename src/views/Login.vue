@@ -243,7 +243,7 @@ export default {
                         console.log(response);
                         if(response.data.code==="1"){
                             console.log('Response data:', response.data);
-                            this.$message.error('注册成功，请登录！');
+                            this.$message('注册成功，请登录！');
                             this.clearRegisterForm(); // 清空注册表单数据
                             this.$router.push('/login'); // 跳转到登录页面
                             this.switchToLogin(); // 切换到登录表单

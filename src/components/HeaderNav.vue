@@ -105,6 +105,7 @@ export default {
             activeMenu: "/",
             User:localStorage.getItem('username'),
             unread: 0,
+            token:localStorage.getItem('token'),
         }
     },
     mounted(){

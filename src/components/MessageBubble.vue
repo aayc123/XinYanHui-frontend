@@ -33,7 +33,7 @@ export default {
   computed: {
     // 生成头像占位文字（取发送者首字母）
     messageAvatar() {
-      return this.message.from.charAt(0).toUpperCase()
+      return this.message.from==='user'?'Q':'A';
     }
   }
 }
