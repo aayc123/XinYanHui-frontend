@@ -4,6 +4,7 @@ import Layout from '../views/Layout.vue';
 import ConsultantDetail from '@/components/ConsultantDetail.vue';
 import MySchedule from '../components/MySchedule.vue';
 import Chat from '../components/Chat.vue';
+import Chatnormal from '../components/Chatnormal.vue';
 import settings from '../components/settings.vue';
 import messages from '../components/messages.vue';
 import book from '../components/book.vue';
@@ -78,6 +79,11 @@ const routes = [
         path: '/chat/:appointmentId',
         name: 'Chat',
         component:Chat,
+    },
+    {
+        path: '/chatnormal/:id',
+        name: 'Chatnormal',
+        component:Chatnormal,
     },
     {
         path: '/consultant/:id',

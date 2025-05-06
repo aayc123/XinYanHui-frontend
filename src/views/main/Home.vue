@@ -396,6 +396,8 @@ export default {
    // 进入聊天
    GotoChat(row) {
       this.selectedrow=row;
+      this.startDate=row.appointmentDate;
+      this.startTime=row.appointmentTime;
       this.showProtocolDialog = true; // 显示协议弹窗
     },
     async confirmGotoChat() {
@@ -420,9 +422,12 @@ export default {
           const id=res.data.data.sessionId;
           //alert(id);
           const chatUrl = this.$router.resolve({
-            path: `/chat/${id}`,
+            path: `/chatnormal/${id}`,
             query: {
               consultantId: res.data.data.consultantId,
+              startDate: this.startDate,
+              startTime: this.startTime,
+              sessionId: id,
             },
           }).href;
 
