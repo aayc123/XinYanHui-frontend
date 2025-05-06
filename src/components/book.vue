@@ -156,11 +156,11 @@ export default {
             };
           });
           if(res.data.data.length === 0) {
-            this.$message("没有预约记录");
+            console.log("没有预约记录");
           }
         }else if (res.data.code === "2") {
           this.appointments = [];
-          this.$message("没有预约记录");
+          console.log("没有预约记录");
         } 
         else {
           this.$message.error("获取预约记录失败：" + res.data.msg);

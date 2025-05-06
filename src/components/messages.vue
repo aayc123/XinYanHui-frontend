@@ -68,7 +68,7 @@
     methods: {
         count(){
             axios
-          .get("http://localhost:8080/user/notification/", {
+          .get("http://localhost:8080/user/notification", {
             headers: { token: this.token },
             params:{userId:localStorage.getItem('userId')},
           })

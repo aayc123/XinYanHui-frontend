@@ -38,7 +38,7 @@
 
 .dot {
   position: absolute;
-  top: -6px;
+  top: 0px;
   right: -10px;
   height: 8px;
   width: 8px;
@@ -114,7 +114,7 @@ export default {
     methods: {
         count() {
             axios
-            .get("http://localhost:8080/user/notification/", {
+            .get("http://localhost:8080/user/notification/newnum", {
                 headers: { token: this.token },
                 params: { userId: localStorage.getItem('userId') },
             })

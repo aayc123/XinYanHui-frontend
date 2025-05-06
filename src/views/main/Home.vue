@@ -420,7 +420,7 @@ export default {
             return;
           }
           const id=res.data.data.sessionId;
-          //alert(id);
+          //alert(this.startTime);
           const chatUrl = this.$router.resolve({
             path: `/chatnormal/${id}`,
             query: {

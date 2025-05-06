@@ -126,24 +126,8 @@ export default {
   }
   },
   created() {
-    this.$message('路由参数:', this.$route.query) // 调试参数
+    //this.$message('路由参数:', this.$route.query) // 调试参数
     this.sessionId = parseInt(this.$route.query.sessionId, 10)
-    
-    // 验证必要参数存在
-    if (!this.$route.query.appointmentDate || !this.$route.query.appointmentTime) {
-      this.$message.error('缺少时间参数！')
-      this.remainingTime = 0
-      return
-    }
-
-    // 验证时间格式
-    const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/
-    if (!timePattern.test(this.$route.query.appointmentTime)) {
-      this.$message.error('时间格式错误，应为HH:mm')
-      this.remainingTime = 0
-      return
-    }
-
     this.calculateRemainingTime();
     this.startCountdown();
     this.initializeWebSocket()
@@ -167,42 +151,26 @@ export default {
       }
     },
     calculateRemainingTime() {
-      try {
-        const dateStr = this.$route.query.appointmentDate
-        const timeStr = this.$route.query.appointmentTime
-        
-        // 创建带有时区信息的日期对象（假设系统使用本地时区）
-        const appointmentDateTime = dayjs(`${dateStr}T${timeStr}:00`) // ISO 8601格式
-        
-        // 调试输出
-        console.log('解析的预约时间:', appointmentDateTime.format())
-        
-        if (!appointmentDateTime.isValid()) {
-          throw new Error('Invalid date/time format')
-        }
-
-        // 计算当前时间（使用相同时区）
-        const now = dayjs()
-        console.log('当前时间:', now.format())
-        
-        // 计算结束时间（预约时间+60分钟）
-        const endTime = appointmentDateTime.add(60, 'minute')
-        console.log('计算结束时间:', endTime.format())
-
-        // 计算剩余秒数（确保不小于0）
-        let diffSeconds = endTime.diff(now, 'second')
-        this.remainingTime = Math.max(diffSeconds, 0)
-        
-        console.log('剩余秒数:', this.remainingTime)
-      } catch (error) {
-        console.error('时间计算错误:', error)
-        this.remainingTime = 0
-      }
+     // 从路由参数获取日期和时间
+     const dateStr = this.$route.query.startDate;
+      const timeStr = this.$route.query.startTime;
+      
+      // 合并日期时间（格式：YYYY-MM-DD HH:mm）
+      const appointmentDateTime = dayjs(`${dateStr} ${timeStr}`);
+      
+      // 计算结束时间（预约时间+1小时）
+      const endTime = appointmentDateTime.add(1, 'hour');
+      
+      // 获取当前时间
+      const now = dayjs();
+      
+      // 计算剩余秒数（如果已超时则显示0）
+      this.remainingTime = Math.max(endTime.diff(now, 'second'), 0);
     },
     startCountdown() {
       this.countdownInterval = setInterval(() => {
         this.calculateRemainingTime();
-        if (this.remainingTime <= 0) {
+        if (this.remainingTime <= 10) {
           clearInterval(this.countdownInterval);
           this.handleTimeUp();
         } else {
@@ -225,13 +193,13 @@ export default {
 
     setupWebSocketHandlers() {
       this.ws.onopen = () => {
-        //alert('WebSocket connected')
+        alert('WebSocket connected')
         this.isConnected = true
         this.reconnectAttempts = 0
       }
 
       this.ws.onmessage = (event) => {
-        //alert('onmessage')
+        alert('onmessage')
         const response = JSON.parse(event.data)
 
         this.handleIncomingMessage(response)
