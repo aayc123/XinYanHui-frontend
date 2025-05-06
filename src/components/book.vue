@@ -26,7 +26,7 @@
         :class="{ 'urgent-appointment': isWithinOneHourAfter(record) }"
         v-for="record in sortedAppointments"
         :key="record.appointmentId"
-        @click="isWithinOneHourAfter(record) && handleCardClick(record.appointmentId,record.appointmentDate)"
+        @click="isWithinOneHourAfter(record) && handleCardClick(record.appointmentId,record.appointmentTime,record.appointmentDate)"
       >
         <p><strong>用户名：</strong>{{ record.userName }}</p>
         <p><strong>预约时间：</strong>{{ record.appointmentDate }} {{ record.appointmentTime }}</p>
@@ -38,7 +38,7 @@
 
 <script>
 import axios from "axios";
-
+import dayjs from "dayjs";
 export default {
   data() {
     return {
@@ -60,23 +60,60 @@ export default {
     }
   },
   methods: {
-    handleCardClick(sessionId,time) {
-      if (this.WindowOpen && !this.WindowOpen.closed) {
-        this.WindowOpen.focus(); // 聚焦已有窗口
-        return;
+    // 修改计算剩余时间的方法
+    calculateRemainingTime() {
+      // 从路由参数获取日期和时间
+      const dateStr = this.$route.query.appointmentDate;
+      const timeStr = this.$route.query.appointmentTime;
+      
+      // 合并日期时间（格式：YYYY-MM-DD HH:mm）
+      const appointmentDateTime = dayjs(`${dateStr} ${timeStr}`);
+      
+      // 计算结束时间（预约时间+1小时）
+      const endTime = appointmentDateTime.add(1, 'hour');
+      
+      // 获取当前时间
+      const now = dayjs();
+      
+      // 计算剩余秒数（如果已超时则显示0）
+      this.remainingTime = Math.max(endTime.diff(now, 'second'), 0);
+    },
+    async handleCardClick(apId, time, date) {
+      try {
+        // 使用await等待请求完成
+        const res = await axios.get("http://localhost:8080/internal/consultant/session", {
+          headers: {
+            token: localStorage.getItem("token") 
+          },
+          params: { appointmentId: apId }
+        });
+        
+        // 根据实际响应结构调整sessionId的获取方式
+        const sessionId = res.data.data.sessionId; // 假设响应结构为{ data: { sessionId: 'xxx' } }
+        
+        if (this.WindowOpen && !this.WindowOpen.closed) {
+          this.WindowOpen.focus();
+          return;
+        }
+        
+        // 生成正确的路由路径
+        const chatUrl = this.$router.resolve({
+          path: `/chatnormal/${sessionId}`, // 传递sessionId作为路径参数
+          query: {
+            consultantId: localStorage.getItem('consultantId'),
+            consultantName: localStorage.getItem('consultantname'),
+            appointmentDate: date,
+            appointmentTime: time,
+            sessionId: sessionId,
+          }
+        }).href;
+        
+        this.WindowOpen = window.open(chatUrl, '_blank');
+        this.agreeProtocol = false;
+      } catch (error) {
+        console.error("获取session失败:", error);
+        this.$message.error("无法进入聊天，请稍后重试");
       }
-      const chatUrl = this.$router.resolve({
-        path: `/chat/${sessionId}`,
-        query: {
-          consultantId: localStorage.getItem('consultantId'), // 确保该值在组件中已定义
-          consultantName: localStorage.getItem('consultantname'),
-          appointmentDate: time,
-          sessionId: sessionId,
-        },
-      }).href;
-
-      this.WindowOpen=window.open(chatUrl, '_blank');
-      this.agreeProtocol = false; // 假设 agreeProtocol 是组件内的状态
     },
     isWithinOneHourAfter(record) {
       const now = new Date();

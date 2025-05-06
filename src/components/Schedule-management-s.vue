@@ -13,8 +13,17 @@
 
     <!-- 弹窗：展示已排班督导 + 可添加列表 -->
     <div v-if="showDialog" class="dialog">
-
-      <h3>增加排班</h3>
+      <h3>当前时段：{{ currentSlot.label }}</h3>
+      <!--已排班列表-->
+      <h4>已排班督导</h4>
+      <ul>
+        <li v-for="sup in scheduledSupervisors" :key="sup.supervisorId" >
+          {{ sup.name }}
+          <button @click="removeSchedule(sup)">删除</button>
+        </li>
+      </ul>
+      <!--添加排班-->
+      <h4>增加排班</h4>
       <div v-for="sup in availableSupervisors" :key="sup.supervisorId" class="checkbox-line">
         <input
           type="checkbox"
@@ -92,16 +101,35 @@ export default {
             this.allSupervisors = res.data.data;
           }
         });
-      // TODO: 获取该时段已排班督导
-      this.scheduledSupervisors = [];
+      // 获取该时段已排班督导
+      axios
+        .get("http://localhost:8080/internal/admin/schedule/supervisor",{
+          headers:{token:this.token},
+          params:{
+            day:slot.day,
+            time:slot.time,
+          },
+        })
+        .then((res)=>{
+          if(res.data.code==="1"){
+            this.scheduledSupervisors=res.data.data.map((entry)=>{
+              const[id,name]=entry.split(":");
+              return{supervisorId:parseInt(id),name};
+            });
+          }
+        });
     },
     submitSchedule() {
       if (!this.selectedSupervisors.length) return;
-      const schedulePayload = this.selectedSupervisors.map((id) => ({
-        supervisorId: id,
-        day: this.currentSlot.day,
-        time: this.currentSlot.time,
-      }));
+      const schedulePayload = this.selectedSupervisors.map((id) => {
+        const sup=this.allSupervisors.find((s)=>s.supervisorId===id);
+        return{
+          supervisorId: id,
+      name: sup ? sup.name : "",  // 添加 name 字段
+      day: this.currentSlot.day,
+      time: this.currentSlot.time,
+        };
+      });
       axios
         .post(
           "http://localhost:8080/internal/admin/schedule/supervisor",
@@ -110,10 +138,10 @@ export default {
         )
         .then((res) => {
           if (res.data.code === "1") {
-            alert("排班成功！");
+            this.$message.success("排班成功！");
             this.closeDialog();
           } else {
-            alert("排班失败：" + res.data.msg);
+            this.$message.error("排班失败：" + res.data.msg);
           }
         });
     },
@@ -141,6 +169,29 @@ export default {
         .map(() => `${Math.random() * 100}% ${Math.random() * 100}%`)
         .join(", ");
     },
+    removeSchedule(sup) {
+  axios
+    .delete("http://localhost:8080/internal/admin/schedule/supervisor", {
+      headers: { token: this.token },
+      data: {
+        supervisorId: sup.supervisorId,
+        name: sup.name,
+        day: this.currentSlot.day,
+        time: this.currentSlot.time,
+      },
+    })
+    .then((res) => {
+      if (res.data.code === "1") {
+        this.scheduledSupervisors = this.scheduledSupervisors.filter(
+          (s) => s.supervisorId !== sup.supervisorId
+        );
+        this.$message.success("删除成功！");
+      } else {
+        this.$message.error("删除失败：" + res.data.msg);
+      }
+    });
+},
+
   },
 };
 </script>

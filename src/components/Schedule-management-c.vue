@@ -26,8 +26,15 @@
     
     <!-- 弹窗：展示已排班咨询师 + 可添加 -->
     <div v-if="showDialog" class="dialog">
-
-      <h3>增加排班</h3>
+      <h3>当前时段：{{ currentSlot.label }}</h3>
+      <h4>已排班咨询师</h4>
+      <ul>
+        <li v-for="(sup, index) in scheduledConsultants" :key="'scheduled-' + index">
+          {{ sup.name }}
+          <button @click="removeSchedule(sup)">删除</button>
+        </li>
+      </ul>
+      <h4>增加排班</h4>
       <div
         class="checkbox-line"
         v-for="sup in availableConsultants"
@@ -59,20 +66,20 @@ export default {
     return {
       token: localStorage.getItem("token"),
       timeSlots: [
-        { label: "周一上午", day: "Monday", time:"AM" },
-        { label: "周二上午", day: "Tuesday", time:"AM" },
-        { label: "周三上午", day: "Wednesday", time:"AM" },
-        { label: "周四上午", day: "Thursday", time:"AM" },
-        { label: "周五上午", day: "Friday", time:"AM" },
-        { label: "周六上午", day: "Saturday", time:"AM" },
-        { label: "周日上午", day: "Sunday", time:"AM" },
-        { label: "周一下午", day: "Monday", time:"PM" },
-        { label: "周二下午", day: "Tuesday", time:"PM" },
-        { label: "周三下午", day: "Wednesday", time:"PM" },
-        { label: "周四下午", day: "Thursday", time:"PM" },
-        { label: "周五下午", day: "Friday", time:"PM" },
-        { label: "周六下午", day: "Saturday", time:"PM" },
-        { label: "周日下午", day: "Sunday", time:"PM" },
+        { label: "周一上午", day: "Monday", time: "AM" },
+        { label: "周二上午", day: "Tuesday", time: "AM" },
+        { label: "周三上午", day: "Wednesday", time: "AM" },
+        { label: "周四上午", day: "Thursday", time: "AM" },
+        { label: "周五上午", day: "Friday", time: "AM" },
+        { label: "周六上午", day: "Saturday", time: "AM" },
+        { label: "周日上午", day: "Sunday", time: "AM" },
+        { label: "周一下午", day: "Monday", time: "PM" },
+        { label: "周二下午", day: "Tuesday", time: "PM" },
+        { label: "周三下午", day: "Wednesday", time: "PM" },
+        { label: "周四下午", day: "Thursday", time: "PM" },
+        { label: "周五下午", day: "Friday", time: "PM" },
+        { label: "周六下午", day: "Saturday", time: "PM" },
+        { label: "周日下午", day: "Sunday", time: "PM" },
       ],
       showDialog: false,
       currentSlot: null,
@@ -110,6 +117,7 @@ export default {
 
     fetchConsultantsBySupervisor() {
       if (!this.selectedSupervisorId) return;
+      // 获取当前选择督导的咨询师
       axios
         .get("http://localhost:8080/internal/admin/all-consultants", {
           headers: { token: this.token },
@@ -117,7 +125,7 @@ export default {
         })
         .then((res) => {
           if (res.data.code === "1") {
-            this.allConsultants = res.data.data;
+            this.allConsultants = res.data.data;  // 只保存该督导的咨询师列表
           }
         });
     },
@@ -126,17 +134,59 @@ export default {
       this.currentSlot = slot;
       this.showDialog = true;
       this.selectedConsultants = [];
-      // TODO: 获取已排班咨询师
-      this.scheduledConsultants = [];
+      // 获取已排班的咨询师
+      axios
+        .get("http://localhost:8080/internal/admin/schedule/consultant", {
+          headers: { token: this.token },
+          params: {
+            day: slot.day,
+            time: slot.time,
+          },
+        })
+        .then((res) => {
+          if (res.data.code === "1") {
+            this.scheduledConsultants = res.data.data.map((entry) => {
+              const [id, name] = entry.split(":");
+              return { consultantId: parseInt(id), name };
+            });
+          }
+        });
+    },
+
+    removeSchedule(sup) {
+      axios
+        .delete("http://localhost:8080/internal/admin/schedule/consultant", {
+          headers: { token: this.token },
+          data: {
+            consultantId: sup.consultantId,
+            name: sup.name,
+            day: this.currentSlot.day,
+            time: this.currentSlot.time,
+          },
+        })
+        .then((res) => {
+          if (res.data.code === "1") {
+            this.scheduledConsultants = this.scheduledConsultants.filter(
+              (s) => s.consultantId !== sup.consultantId
+            );
+            this.$message.success("删除成功！");
+          } else {
+            this.$message.error("删除失败：" + res.data.msg);
+          }
+        });
     },
 
     submitSchedule() {
       if (!this.selectedConsultants.length) return;
-      const schedulePayload = this.selectedConsultants.map((id) => ({
-        consultantId: id,
-        day: this.currentSlot.day,
-        time: this.currentSlot.time,
-      }));
+      const schedulePayload = this.selectedConsultants.map((id) => {
+        const sup = this.allConsultants.find((s) => s.consultantId === id);
+        return {
+          consultantId: id,
+          name: sup ? sup.name : "",
+          day: this.currentSlot.day,
+          time: this.currentSlot.time,
+        };
+      });
 
       axios
         .post(
@@ -146,10 +196,10 @@ export default {
         )
         .then((res) => {
           if (res.data.code === "1") {
-            alert("排班成功！");
+            this.$message.success("排班成功！");
             this.closeDialog();
           } else {
-            alert("排班失败：" + res.data.msg);
+            this.$message.error("排班失败：" + res.data.msg);
           }
         });
     },

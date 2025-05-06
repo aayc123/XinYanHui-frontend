@@ -54,6 +54,10 @@ const routes=[
         path: '/chatobs/:appointmentId',
         name: 'chatobs',
         component:()=>import("../components/Chatobs.vue")
+    },{
+        path: '/chatnormal/:sessionId',
+        name: 'chatnormal',
+        component:()=>import("../components/Chatnormal.vue")
     },
     
 ];

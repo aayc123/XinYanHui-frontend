@@ -171,25 +171,32 @@ export default {
     },
 
     async deleteStaff(staff) {
-      const confirmDelete = confirm(`确认删除 ${staff.username} 吗？`)
-      if (!confirmDelete) return
+  const confirmDelete = confirm(`确认删除 ${staff.username} 吗？`)
+  if (!confirmDelete) return
 
-      const isConsultant = staff.type === '咨询师'
-      const url = isConsultant
-        ? `http://localhost:8080/internal/admin/consultant?consultantId=${staff.id}`
-        : `http://localhost:8080/internal/admin/supervisor?supervisorId=${staff.id}`
+  // 根据 staff 类型决定删除哪个接口
+  const isConsultant = staff.type === '咨询师'
+  const url = isConsultant
+    ? 'http://localhost:8080/internal/admin/consultant'
+    : 'http://localhost:8080/internal/admin/supervisor'
 
-      try {
-        await axios.delete(url, {
-          headers: { token: this.token }
-        })
-        alert('删除成功')
-        this.fetchStaff() // 重新加载数据
-      } catch (error) {
-        console.error('删除失败', error)
-        alert('删除失败')
-      }
-    }
+  const params = isConsultant
+    ? { consultantId: staff.id }
+    : { supervisorId: staff.id }
+
+  try {
+    await axios.delete(url, {
+      headers: { token: this.token },
+      params // 添加 URL 参数
+    })
+    alert('删除成功')
+    this.fetchStaff() // 删除成功后刷新数据
+  } catch (error) {
+    console.error('删除失败', error)
+    alert('删除失败，请稍后重试')
+  }
+}
+
 
   }
 }

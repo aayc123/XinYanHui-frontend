@@ -153,14 +153,14 @@ export default {
                     //alert(token);
                     this.$store.dispatch('connectWebSocket', token);
                 } else {
-                    alert(response.data.msg);
+                    this.$message.error(response.data.msg);
                 }
             })
             .catch(error => {
-                alert('登录失败!');
+                this.$message.error('登录失败!');
             });
         } else {
-            alert('输入数据不合法!');
+            this.$message.error('输入数据不合法!');
         }
     });
 },

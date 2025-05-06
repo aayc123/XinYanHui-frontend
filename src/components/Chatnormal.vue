@@ -108,20 +108,39 @@ export default {
   created() {
     document.title = '来访者咨询';
     this.sessionId       = parseInt(this.$route.query.sessionId,10)
+    this.calculateRemainingTime();
+    this.startCountdown();
     this.initializeWebSocket()
     window.addEventListener('beforeunload', this.handleBeforeUnload)
     window.addEventListener('beforeunload', this.confirmBeforeUnload)
-    this.fetchHistory(),
-    this.calculateRemainingTime();
-    this.startCountdown();
   },
   beforeDestroy() {
+    alert('来访者结束咨询！')
     this.cleanupWebSocket()
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
     window.removeEventListener('beforeunload', this.confirmBeforeUnload)
     clearInterval(this.countdownInterval);  // 清除倒计时
+    this.cleanupSession()
   },
   methods: {
+    // 修改计算剩余时间的方法
+    calculateRemainingTime() {
+      // 从路由参数获取日期和时间
+      const dateStr = this.$route.query.appointmentDate;
+      const timeStr = this.$route.query.appointmentTime;
+      
+      // 合并日期时间（格式：YYYY-MM-DD HH:mm）
+      const appointmentDateTime = dayjs(`${dateStr} ${timeStr}`);
+      
+      // 计算结束时间（预约时间+1小时）
+      const endTime = appointmentDateTime.add(1, 'hour');
+      
+      // 获取当前时间
+      const now = dayjs();
+      
+      // 计算剩余秒数（如果已超时则显示0）
+      this.remainingTime = Math.max(endTime.diff(now, 'second'), 0);
+    },
     async gotohelp(){
       if (this.helpWindow && !this.helpWindow.closed) {
         this.helpWindow.focus(); // 聚焦已有窗口
@@ -276,23 +295,9 @@ export default {
       this.cleanupWebSocket()
     },
 
-    async fetchHistory() {
-      try {
-        // 这里假设有获取历史记录的API
-        // const response = await axios.get(`/api/messages/${this.sessionId}`)
-        // this.messages = response.data.map(...)
-      } catch (error) {
-        //console.error('加载历史消息失败:', error)
-      }
-    },
-    calculateRemainingTime() {
-      const startTime = dayjs(this.starttime);
-      const endTime = startTime.add(1, 'hour');
-      this.remainingTime = endTime.diff(dayjs(), 'seconds');
-    },
-
     startCountdown() {
       this.countdownInterval = setInterval(() => {
+        this.calculateRemainingTime();
         if (this.remainingTime <= 0) {
           clearInterval(this.countdownInterval);
           this.handleTimeUp();
@@ -323,7 +328,6 @@ export default {
       window.removeEventListener('beforeunload', this.confirmBeforeUnload)
       localStorage.removeItem(`countdown_${this.sessionId}`)
       this.cleanupWebSocket()
-      this.$message('会话结束！')
       window.close()
     },
 

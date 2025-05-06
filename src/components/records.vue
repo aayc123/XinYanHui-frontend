@@ -40,6 +40,12 @@
           </div>
         </div>
         <div class="session-actions">
+          <!-- 导出按钮 -->
+          <el-button size="small" type="primary" 
+                     style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; margin-right: 10px;"
+                     @click="exportSession(session.sessionId)">
+            导出会话
+          </el-button>
           <el-button size="small" type="primary" 
                      style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5;"
                      @click="openDetailDialog(session.sessionId)">
@@ -70,23 +76,15 @@
           <div class="chat-msg">{{ msg.msg }}</div>
         </div>
       </div>
-      <div style="margin-top:20px; display: flex; justify-content: space-between; align-items: center;">
-  <el-button
-    type="primary"
-    @click="exportHistory()"
-    style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
-  >
-    导出咨询记录
-  </el-button>
-
-  <el-button
-    type="primary"
-    @click="detailDialogVisible = false"
-    style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
-  >
-    关闭
-  </el-button>
-</div>
+      <div style="text-align: right; margin-top: 20px;">
+        <el-button
+          type="primary"
+          @click="detailDialogVisible = false"
+          style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
+        >
+          关闭
+        </el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -104,19 +102,10 @@ export default {
       sessionHistory: [],
       filterDate: null,
       token: localStorage.getItem("token") || "",
-      consultantId: localStorage.getItem("consultantId"),
-      currentsessionId:null,
+      consultantId: localStorage.getItem("consultantId")
     };
   },
   methods: {
-    async exportHistory(){
-      const sessionId = this.currentSessionId;
-      
-      await axios.get("http://localhost:8080/internal/session/export", {
-          headers: { token: this.token },
-          params:{sessionId:sessionId},
-        });
-    },
     async fetchSessions() {
       try {
         const params = { consultantId: this.consultantId };
@@ -164,7 +153,6 @@ export default {
     },
 
     openDetailDialog(sessionId) {
-      this.currentSessionId = sessionId;
       this.$axios.get("http://localhost:8080/internal/session/history", {
         headers: { token: this.token },
         params: { sessionId: sessionId },
@@ -186,7 +174,39 @@ export default {
       const date = new Date(timeStr);
       return date.toLocaleTimeString();
     },
+    exportSession(sessionId) {
+  this.$axios.get("http://localhost:8080/internal/session/export", {
+    headers: { token: this.token },
+    params: { sessionId: sessionId },
+    responseType: 'blob',  // 非常重要
+  }).then(response => {
+    const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+
+    // 获取文件名（从响应头或自定义）
+    const contentDisposition = response.headers['content-disposition'];
+    let fileName = 'session_export.xlsx'; // 默认文件名
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        fileName = decodeURIComponent(match[1]);
+      }
+    }
+
+    // 创建临时下载链接
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+
+    this.$message.success("导出成功！");
+  }).catch(error => {
+    this.$message.error("导出失败：" + error);
+  });
+}
+,
   },
+
   created() {
     axios.defaults.headers.common["token"] = localStorage.getItem("token") || "";
     this.fetchSessions();

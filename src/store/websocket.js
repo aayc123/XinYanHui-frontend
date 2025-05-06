@@ -36,7 +36,7 @@ export default {
   
         ws.onclose = () => {
           commit('setConnectionStatus', false);
-          alert('WebSocket disconnected');
+          this.$message.error('WebSocket disconnected');
         };
   
         ws.onmessage = (event) => {
