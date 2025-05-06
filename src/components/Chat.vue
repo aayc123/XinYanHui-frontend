@@ -116,6 +116,7 @@ export default {
     this.startCountdown();
   },
   beforeDestroy() {
+    alert('来访者结束咨询！')
     this.cleanupWebSocket()
     window.removeEventListener('beforeunload', this.handleBeforeUnload)
     window.removeEventListener('beforeunload', this.confirmBeforeUnload)
@@ -145,7 +146,7 @@ export default {
         if (response.data && response.data.code === '1') {
           const data = response.data.data;
           //这里是咨询师跳转到求助界面
-          alert(data.recordId);
+          //alert(data.recordId);
           const chatUrl = this.$router.resolve({
             path: `/chatsc/${data.recordId}`, // 路径为 /chat/recordId
             query: {
@@ -157,8 +158,9 @@ export default {
             }
           }).href;
 
-          window.open(chatUrl, '_blank');
+          this.helpWindow=window.open(chatUrl, '_blank');
           this.showhelp=false
+          
         } else {
           this.$message.error(response.data.msg || '未知错误');
         }
@@ -225,7 +227,13 @@ export default {
         status: 'received'
       }
       //alert(response.system)
+
       this.messages.push(newMessage)
+
+        if (newMessage.text === '会话已结束') {
+            alert("会话已结束！")
+            this.cleanupSession()
+        }
     },
     async addMessage(content) {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {

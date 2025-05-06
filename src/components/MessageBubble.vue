@@ -31,14 +31,16 @@ export default {
     },
     sessiontype: {
       type: Number,
-      default: 0
+      required:true
     }
   },
   computed: {
     // 生成头像占位文字（取发送者首字母）
     messageAvatar() {
-      if(this.sessiontype===0) return this.message.from==='user'?'C':'U';
-      else return this.message.from==='user'?'C':'S';
+      //alert(this.sessiontype)
+      // if(this.sessiontype===0) return this.message.from==='user'?'C':'U';
+      // else return this.message.from==='user'?'C':'S';
+      return this.message.from==='user'?'A':'Q';
     }
   }
 }

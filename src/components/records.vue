@@ -70,15 +70,23 @@
           <div class="chat-msg">{{ msg.msg }}</div>
         </div>
       </div>
-      <div style="text-align: right; margin-top: 20px;">
-        <el-button
-          type="primary"
-          @click="detailDialogVisible = false"
-          style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
-        >
-          关闭
-        </el-button>
-      </div>
+      <div style="margin-top:20px; display: flex; justify-content: space-between; align-items: center;">
+  <el-button
+    type="primary"
+    @click="exportHistory()"
+    style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
+  >
+    导出咨询记录
+  </el-button>
+
+  <el-button
+    type="primary"
+    @click="detailDialogVisible = false"
+    style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
+  >
+    关闭
+  </el-button>
+</div>
     </el-dialog>
   </div>
 </template>
@@ -96,10 +104,19 @@ export default {
       sessionHistory: [],
       filterDate: null,
       token: localStorage.getItem("token") || "",
-      consultantId: localStorage.getItem("consultantId")
+      consultantId: localStorage.getItem("consultantId"),
+      currentsessionId:null,
     };
   },
   methods: {
+    async exportHistory(){
+      const sessionId = this.currentSessionId;
+      
+      await axios.get("http://localhost:8080/internal/session/export", {
+          headers: { token: this.token },
+          params:{sessionId:sessionId},
+        });
+    },
     async fetchSessions() {
       try {
         const params = { consultantId: this.consultantId };
@@ -147,6 +164,7 @@ export default {
     },
 
     openDetailDialog(sessionId) {
+      this.currentSessionId = sessionId;
       this.$axios.get("http://localhost:8080/internal/session/history", {
         headers: { token: this.token },
         params: { sessionId: sessionId },

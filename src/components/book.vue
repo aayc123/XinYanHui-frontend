@@ -16,15 +16,23 @@
           筛选
         </el-button>
       </el-form-item>
+      <div>方框变红，则预约开始， 点击进入！</div>
     </el-form>
 
     <!-- 预约记录列表 -->
     <div class="appointment-card-container">
-      <div class="appointment-card" v-for="record in sortedAppointments" :key="record.appointmentId">
+      <div
+        class="appointment-card"
+        :class="{ 'urgent-appointment': isWithinOneHourAfter(record) }"
+        v-for="record in sortedAppointments"
+        :key="record.appointmentId"
+        @click="isWithinOneHourAfter(record) && handleCardClick(record.appointmentId,record.appointmentDate)"
+      >
         <p><strong>用户名：</strong>{{ record.userName }}</p>
         <p><strong>预约时间：</strong>{{ record.appointmentDate }} {{ record.appointmentTime }}</p>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -37,19 +45,45 @@ export default {
       consultantId: localStorage.getItem("consultantId"),
       token: localStorage.getItem("token"),
       appointments: [],
-      filterDate: null
+      filterDate: null,
+      WindowOpen:null,
     };
   },
   computed: {
     sortedAppointments() {
+      const now = new Date();
       return [...this.appointments].sort((a, b) => {
         const aTime = new Date(`${a.appointmentDate}T${a.appointmentTime}`);
         const bTime = new Date(`${b.appointmentDate}T${b.appointmentTime}`);
-        return bTime - aTime;
+        return Math.abs(aTime - now) - Math.abs(bTime - now); // 越靠近现在的排前面
       });
     }
   },
   methods: {
+    handleCardClick(sessionId,time) {
+      if (this.WindowOpen && !this.WindowOpen.closed) {
+        this.WindowOpen.focus(); // 聚焦已有窗口
+        return;
+      }
+      const chatUrl = this.$router.resolve({
+        path: `/chat/${sessionId}`,
+        query: {
+          consultantId: localStorage.getItem('consultantId'), // 确保该值在组件中已定义
+          consultantName: localStorage.getItem('consultantname'),
+          appointmentDate: time,
+          sessionId: sessionId,
+        },
+      }).href;
+
+      this.WindowOpen=window.open(chatUrl, '_blank');
+      this.agreeProtocol = false; // 假设 agreeProtocol 是组件内的状态
+    },
+    isWithinOneHourAfter(record) {
+      const now = new Date();
+      const appointmentTime = new Date(`${record.appointmentDate}T${record.appointmentTime}`);
+      const diff = now - appointmentTime;
+      return diff >= 0 && diff <= 3600 * 1000; // 在之后1小时内
+    },
     async fetchAppointments() {
       try {
         const params = {
@@ -109,6 +143,10 @@ export default {
 </script>
 
 <style scoped>
+.urgent-appointment {
+  border: 2px solid red !important;
+}
+
 .appointment-records {
   height: calc(100vh - 20px); /* 适当保留顶部空间 */
   overflow-y: auto;

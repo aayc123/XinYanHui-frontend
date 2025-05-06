@@ -118,6 +118,7 @@
       this.startCountdown();
     },
     beforeDestroy() {
+      alert('督导已结束对话')
       this.cleanupWebSocket()
       window.removeEventListener('beforeunload', this.handleBeforeUnload)
       window.removeEventListener('beforeunload', this.confirmBeforeUnload)
@@ -150,12 +151,13 @@
         }
   
         this.ws.onerror = (error) => {
-          alert('WebSocket error:', error)
+          alert('网络故障，请关闭页面重进', error)
           this.isConnected = false
         }
   
         this.ws.onclose = (event) => {
           this.isConnected = false
+          this.cleanupSession()
           if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.handleReconnect()
           }
@@ -187,7 +189,7 @@
 
         if (newMessage.text === '会话已结束') {
             alert("会话已结束！")
-            window.close()
+            this.cleanupSession()
         }
       },
       async addMessage(content) {

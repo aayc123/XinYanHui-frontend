@@ -27,7 +27,7 @@
       <div class="dialog-content">
         <p>是否确定要结束本次会话？</p>
         <div class="dialog-btns">
-          <button @click="handleShowRating">确定</button>
+          <button @click="cleanupSession">确定</button>
           <button @click="showConfirm = false">取消</button>
         </div>
       </div>
@@ -94,6 +94,7 @@ export default {
     window.addEventListener('beforeunload', this.handleMainUnload);
   },
   beforeDestroy() {
+    alert('对话窗口已关闭');
     window.removeEventListener('beforeunload', this.handleMainUnload);
     this._closeChatWindow();
     if (this.checkerTimer) {
@@ -104,6 +105,13 @@ export default {
     this.cleanupWebSocket();
   },
   methods: {
+    cleanupSession() {
+        window.removeEventListener('beforeunload', this.confirmBeforeUnload)
+        localStorage.removeItem(`countdown_${this.sessionId}`)
+        this.cleanupWebSocket()
+        window.close()
+        this.$message.success('会话已结束')
+      },
     async initializeWebSocket() {
       this.cleanupWebSocket();
       try {
