@@ -1,5 +1,17 @@
 <template>
   <div class="messages-container">
+    <el-dialog
+      :visible.sync="deleteConfirmVisible"
+      title="确认删除"
+      width="30%"
+      :show-close="false"
+    >
+      <span>确定要删除所有已读消息吗？此操作不可撤销！</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="deleteConfirmVisible = false">取 消</el-button>
+        <el-button type="danger" @click="confirmDeleteRead">确 定</el-button>
+      </span>
+    </el-dialog>
     <!-- 操作按钮 -->
     <div class="actions">
       <el-button type="primary" @click="markAllAsRead" class="custom-btn">全部标记为已读</el-button>
@@ -33,6 +45,7 @@ export default {
     return {
       token: localStorage.getItem("token"),
       messages: [],
+      deleteConfirmVisible: false,  
     };
   },
   computed: {
@@ -48,6 +61,38 @@ export default {
     },
   },
   methods: {
+    // 修改删除方法
+    deleteReadMessages() {
+      const readCount = this.messages.filter(m => m.status === "Read").length;
+      if (readCount === 0) {
+        this.$message.warning("当前没有可删除的已读消息");
+        return;
+      }
+      this.deleteConfirmVisible = true;
+    },
+
+    // 新增确认删除方法
+    confirmDeleteRead() {
+      const readMsgs = this.messages.filter((m) => m.status === "Read");
+      const requests = readMsgs.map((msg) =>
+        axios.delete("http://localhost:8080/internal/notification", {
+          params: { notfId: msg.notfId },
+          headers: { token: this.token },
+        })
+      );
+
+      Promise.all(requests)
+        .then(() => {
+          this.messages = this.messages.filter((m) => m.status !== "Read");
+          this.$message.success(`成功删除${readMsgs.length}条消息`);
+        })
+        .catch(() => {
+          this.$message.error("删除操作失败");
+        })
+        .finally(() => {
+          this.deleteConfirmVisible = false;
+        });
+    },
     fetchMessages() {
       axios
         .get("http://localhost:8080/internal/notification/list", {
@@ -88,11 +133,14 @@ export default {
           )
           .then((res) => {
             if (res.data.code === "1") {
-              msg.status = "Read";
+              this.$set(msg, 'status', 'Read'); // 使用 $set 来保证响应式
+              this.messages = [...this.messages]; // 通过重新赋值来触发渲染
             }
           });
       }
     },
+
+
     markAllAsRead() {
       const unread = this.messages.filter((m) => m.status === "New");
       const requests = unread.map((msg) =>
@@ -112,19 +160,6 @@ export default {
         });
       });
     },
-    deleteReadMessages() {
-      const readMsgs = this.messages.filter((m) => m.status === "Read");
-      const requests = readMsgs.map((msg) =>
-        axios.delete("http://localhost:8080/internal/notification", {
-          params: { notfId: msg.notfId },
-          headers: { token: this.token },
-        })
-      );
-
-      Promise.all(requests).then(() => {
-        this.messages = this.messages.filter((m) => m.status !== "Read");
-      });
-    },
   },
   mounted() {
     this.fetchMessages();
@@ -135,13 +170,23 @@ export default {
 <style scoped>
 .messages-container {
   padding: 20px;
-  height: 100vh;
+  height: calc(100vh - 40px); /* 确保容器不被遮挡，减去padding */
   overflow-y: auto;
   box-sizing: border-box;
   background-color: white;
   text-align: left;
-  width:100%;
-  bottom:20px;
+  width: 100%;
+  bottom: 20px;
+}
+
+.message-card-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 一行显示两个卡片 */
+  gap: 24px; /* 可稍微增大间距 */
+  grid-auto-rows: minmax(150px, auto);
+  overflow-y: auto;
+  height: calc(100vh - 140px); /* 除去头部和底部的部分，确保底部有足够空间 */
+  padding-bottom: 20px; /* 给底部加一些空间，避免遮挡 */
 }
 
 .actions {
@@ -156,38 +201,27 @@ export default {
   color: #8b4513;
   border: 1px solid #ffe4b5;
 }
-
-.message-card-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 一行显示两个卡片 */
-  gap: 24px; /* 可稍微增大间距 */
-  grid-auto-rows: minmax(150px, auto);
-  overflow-y: auto;
-  height: 100vh;
-}
-
 .message-card {
   display: flex;
-  flex-direction: column; /* Make the card layout vertically stacked */
-  justify-content: flex-start;
+  flex-direction: column; /* 改为纵向布局 */
+  justify-content: space-between; /* 内容上下分布 */
   align-items: flex-start;
   background-color: white;
   border: 1px solid #FFE4B5;
   border-radius: 12px;
   padding: 16px;
-
   transition: background-color 0.2s ease-in-out;
   cursor: pointer;
-  min-height: 150px; /* Ensure uniform height for cards */
-}
-
-.message-card:hover {
-  background-color: #f4e7d3;
+  height: 170px; /* 设置固定高度 */
+  overflow: hidden; /* 隐藏溢出的内容 */
 }
 
 .message-left {
   flex: 1;
-  padding-right: 10px;
+  margin-right: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 上下均匀分布内容 */
 }
 
 .message-content {
@@ -196,6 +230,8 @@ export default {
   margin-bottom: 6px;
   white-space: pre-wrap;
   line-height: 1.5;
+  overflow-y: auto; /* 允许内容溢出时滚动 */
+  max-height: 100px; /* 限制消息内容的最大高度 */
 }
 
 .message-time {
@@ -206,9 +242,9 @@ export default {
 
 .message-right {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding-top: 4px;
+  padding-top: 12px; /* 调整间距，使未读标识和时间更接近 */
 }
 
 .no-messages {
@@ -217,4 +253,28 @@ export default {
   color: #999;
   margin-top: 100px;
 }
+
+.message-card:hover {
+  background-color: #f4e7d3;
+}
+
+
+
+.no-messages {
+  text-align: center;
+  font-size: 20px;
+  color: #999;
+  margin-top: 100px;
+}
+.dialog-footer {
+  text-align: right;
+}
+
+
+.el-button--primary:hover,
+.el-button--danger:hover {
+  background-color: #ffd699;
+}
+/* 修改后样式 */
+
 </style>

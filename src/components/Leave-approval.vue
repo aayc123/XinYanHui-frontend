@@ -14,7 +14,7 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" style="background-color: #FFE4B5; color: #8B4513;" @click="filterRecords">
+        <el-button style="background-color: #FFE4B5; color: #8B4513;" @click="filterRecords">
           筛选
         </el-button>
       </el-form-item>

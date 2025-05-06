@@ -34,8 +34,8 @@ import axios from "axios";
 export default {
   data() {
     return {
-      consultantId: localStorage.getItem("consultantId"), 
-      token:localStorage.getItem("token"),
+      consultantId: localStorage.getItem("consultantId"),
+      token: localStorage.getItem("token"),
       appointments: [],
       filterDate: null
     };
@@ -70,25 +70,22 @@ export default {
         });
 
         if (res.data.code === "1") {
-          this.appointments = (res.data.data || []).map(item => {
-            return {
-              appointmentId: item.appointmentId,
-              userId: item.userId,
-              userName: item.userName || "未知用户",
-              consultantId: item.consultantId,
-              appointmentDate: item.appointmentDate,
-              appointmentTime: item.appointmentTime,
-              bookingDate: item.bookingDate,
-              status: item.status,
-              cancellationTime: item.cancellationTime,
-              cancellationReason: item.cancellationReason || "无理由"
-            };
-          });
-        } else if(res.data.code === "2"){
-          this.appointments = []
+          this.appointments = (res.data.data || []).map(item => ({
+            appointmentId: item.appointmentId,
+            userId: item.userId,
+            userName: item.userName || "未知用户",
+            consultantId: item.consultantId,
+            appointmentDate: item.appointmentDate,
+            appointmentTime: item.appointmentTime,
+            bookingDate: item.bookingDate,
+            status: item.status,
+            cancellationTime: item.cancellationTime,
+            cancellationReason: item.cancellationReason || "无理由"
+          }));
+        } else if (res.data.code === "2") {
+          this.appointments = [];
           this.$message("无预约记录");
-        }
-        else {
+        } else {
           this.$message.error("获取预约记录失败：" + res.data.msg);
         }
       } catch (err) {
@@ -104,38 +101,20 @@ export default {
       return `${year}-${month}-${day}`;
     }
   },
-  created() {
-    axios.defaults.headers.common["token"] = localStorage.getItem("token") || "";
-  },
   mounted() {
+    axios.defaults.headers.common["token"] = localStorage.getItem("token") || "";
     this.fetchAppointments();
   }
 };
 </script>
 
 <style scoped>
-/* 加入全局样式 */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow-y: auto;
-  padding-bottom:30px;
-}
-
-#app {
-  height: 100%;
-  overflow: auto;
-}
-
 .appointment-records {
+  height: calc(100vh - 20px); /* 适当保留顶部空间 */
+  overflow-y: auto;
   padding: 20px;
-  min-height: 100%;
   box-sizing: border-box;
-  overflow-y:auto;
-  padding-bottom: 30px;
 }
-
 
 /* 筛选区域 */
 .filter-form {
@@ -174,6 +153,7 @@ html, body {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   padding: 10px 0;
+  padding-bottom: 60px; /* 防止最后一项被遮住 */
 }
 
 .appointment-card {
@@ -182,9 +162,6 @@ html, body {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   transition: transform 0.2s ease;
 }
 

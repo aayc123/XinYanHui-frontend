@@ -57,10 +57,10 @@ export default {
           this.rawData = response.data.data
           this.renderChart()
         } else {
-          console.error('数据获取失败：', response.data.msg)
+          alert('数据获取失败：', response.data.msg)
         }
       } catch (err) {
-        console.error('请求错误：', err)
+        alert('请求错误：', err)
       }
     },
     renderChart() {

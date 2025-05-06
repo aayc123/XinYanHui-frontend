@@ -30,13 +30,14 @@
         </div>
         <div class="session-right">
           <div class="rating">
-            <el-rate
-              v-if="session.rating !== null"
-              :value="session.rating"
-              disabled
-            />
+            <template v-if="session.rating !== null">
+              <el-rate :value="session.rating" disabled />
+              <p class="feedback">{{ session.feedback || "无评价" }}</p>
+            </template>
+            <template v-else>
+              <p class="feedback">无评价</p>
+            </template>
           </div>
-          <p class="feedback">{{ session.feedback || "未填写评价" }}</p>
         </div>
         <div class="session-actions">
           <el-button size="small" type="primary" 
@@ -82,6 +83,8 @@
   </div>
 </template>
 
+
+
 <script>
 import axios from "axios";
 
@@ -102,8 +105,8 @@ export default {
         const params = { consultantId: this.consultantId };
 
         if (this.filterDate && this.filterDate.length === 2) {
-          params.startDate = this.formatTime(this.filterDate[0]);
-          params.endDate = this.formatTime(this.filterDate[1]);
+          params.startDate = this.formatPDate(this.filterDate[0]);
+          params.endDate = this.formatPDate(this.filterDate[1]);
         }
 
         const res = await axios.get("http://localhost:8080/internal/session/list", {
@@ -113,6 +116,9 @@ export default {
 
         if (res.data.code === "1") {
           this.sessions = res.data.data;
+          this.sessions.sort((a,b)=>{
+            return new Date(b.startTime) - new Date(a.startTime)
+          })
         } else {
           this.$message.error("获取会话列表失败：" + res.data.msg);
         }
@@ -132,7 +138,7 @@ export default {
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
 
-    formatTime(date) {
+    formatPDate(date) {
       const d = new Date(date);
       const year = d.getFullYear();
       const month = (`0${d.getMonth() + 1}`).slice(-2);
@@ -171,21 +177,31 @@ export default {
 </script>
 
 <style scoped>
-/* 现有的样式保持不变，只需调整样式来确保时间展示适当 */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .session-records {
-  padding: 20px;
   height: 100vh;
   overflow-y: auto;
   box-sizing: border-box;
-  padding-bottom:10px;
+  padding: 20px 20px 40px 20px; /* 底部多加点 padding，确保滑到底时最后一个卡片不会被遮住 */
+  display: flex;
+  flex-direction: column;
 }
 
 .session-card-container {
+  max-height: calc(100vh - 120px); /* 视窗高度减去顶部筛选区域 + padding */
+  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
-  padding: 10px 0;
+  padding-bottom: 50px; /* 防止最后一项被遮住 */
 }
+
+
 
 .session-card {
   background-color: white;
@@ -276,5 +292,10 @@ export default {
 .custom-dialog .el-dialog__header {
   border-bottom: 1px solid #f0f0f0;
   margin-bottom: 10px;
+}
+
+.filter-form {
+  justify-content: flex-start;
+  display: flex;
 }
 </style>

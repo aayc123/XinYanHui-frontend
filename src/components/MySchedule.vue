@@ -16,7 +16,7 @@
       <div v-for="n in firstDayOffset" :key="'empty'+n" class="day empty"></div>
       <div v-for="day in monthDays" :key="day.date"
         :class="['day', { past: day.isPast }]" 
-        @click="showSchedule(day.date)">
+        >
       <div v-if="day.morning" class="morning-slot"></div>
       <div v-if="day.afternoon" class="afternoon-slot"></div>
       {{ parseDayNumber(day.date) }}
@@ -37,7 +37,7 @@
         <tbody>
           <tr v-for="(item, index) in scheduleList" :key="index">
             <td>{{ item.date }}</td>
-            <td>{{ item.time }}</td>
+            <td>{{ item.time==="8"?"上午":"下午" }}</td>
             <td>
               <span v-if="item.isCompleted" class="completed">✔</span>
               <span v-else class="pending">○</span>
@@ -58,8 +58,10 @@
     <div v-if="showLeaveModal" class="modal">
       <h3>请假申请</h3>
       <textarea v-model="leaveReason" placeholder="请填写请假理由"></textarea>
-      <button @click="submitLeave">提交</button>
-      <button @click="showLeaveModal = false">取消</button>
+      <div class="modal-actions">
+        <button @click="submitLeave">提交</button>
+        <button @click="showLeaveModal = false">取消</button>
+      </div>
     </div>
   </div>
 </template>
@@ -99,18 +101,18 @@ export default {
       return parseInt(dateStr.split('-')[2], 10); // 获取日期字符串中的“日”部分
     },
 
-    showSchedule(date) {
-      this.isCalendarView = false;
-      this.$nextTick(() => {
-        const target = this.scheduleList.find(item => item.date === date);
-        if (target) {
-          const el = document.querySelector(`tr[data-date="${date}"]`);
-          if (el) {
-            el.scrollIntoView();
-          }
-        }
-      });
-    },
+    // showSchedule(date) {
+    //   this.isCalendarView = false;
+    //   this.$nextTick(() => {
+    //     const target = this.scheduleList.find(item => item.date === date);
+    //     if (target) {
+    //       const el = document.querySelector(`tr[data-date="${date}"]`);
+    //       if (el) {
+    //         el.scrollIntoView();
+    //       }
+    //     }
+    //   });
+    // },
 
     applyLeave(item) {
       this.currentLeaveItem = item;
@@ -134,13 +136,16 @@ export default {
             isCompleted: this.isPast(item.availableDate),
             leaveApplied: false // 默认 false，如果后端未返回该字段
           }));
-
+          this.scheduleList.sort(((a, b) => {
+            // 假设字段名为 a.time，如果是别的名称改成对应字段
+            return new Date(b.date) - new Date(a.date);
+          }))
           this.generateMonthDays();
         } else {
           alert("获取排班失败：" + response.data.msg);
         }
       }).catch(error => {
-        console.error("加载排班失败", error);
+        this.$message.error("加载排班失败", error);
       });
     },
 
@@ -169,7 +174,7 @@ export default {
           alert(response.data.message || "请假失败，请稍后再试。");
         }
       }).catch(error => {
-        console.error("请假失败", error);
+        this.$message.error("请假失败", error);
         alert("请假失败，请稍后重试。");
       });
 
@@ -327,8 +332,37 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
+  background: #fff;
   padding: 20px;
+  width: 320px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal textarea {
+  width: 100%;
+  height: 80px;
+  margin-bottom: 12px;
+  padding: 8px;
   border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  padding: 6px 12px;
+  background-color: #8B4513;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>
