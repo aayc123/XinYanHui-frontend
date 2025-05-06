@@ -112,7 +112,15 @@
                 <!-- 合并预约日期和时间 -->
                 <el-table-column label="预约时间" width="170" height="10%">
                   <template slot-scope="scope">
-                    {{ scope.row.appointmentDate }}   {{ scope.row.appointmentTime }}   
+                    <span class="time-cell">
+                    <!-- 如果状态为 ready，就显示红点 -->
+                    <i
+                      v-if="scope.row.status === 'ready'"
+                      class="ready-dot"
+                    ></i>
+                    <!-- 然后再显示时间 -->
+                    {{ scope.row.appointmentDate }} {{ scope.row.appointmentTime }}
+                  </span>
                   </template>
                 </el-table-column>
 
@@ -741,4 +749,20 @@ export default {
   background: #8B4513;
   border-radius: 4px;
 }
+/* 时间单元格里的小容器 */
+.time-cell {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 小红点 */
+.ready-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  border-radius: 50%;
+  margin-right: 6px; /* 点和文字之间留白 */
+}
+
 </style>

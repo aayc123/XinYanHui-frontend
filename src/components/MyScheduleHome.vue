@@ -63,7 +63,7 @@
               </button>
               <button
                 v-else-if="appointment.status === 'completed'"
-                @click="viewRecord(appointment)"
+                @click="viewRecord()"
               >
                 查看记录
               </button>
@@ -197,9 +197,8 @@ export default {
       this.cancelAppointment(this.currentAppointmentId, this.leaveReason); // 提交取消请求
       this.closeCancelModal(); // 关闭模态框
     },
-    viewRecord(appointment) {
-      alert(`查看记录：${appointment.appointmentDate} ${appointment.appointmentTime}`);
-      // TODO: 跳转到详情页面或显示详细记录
+    viewRecord() {
+      alert("请前往个人主页查看记录！");
     },
     generateMonthData() {
       const year = 2025; // 固定为2025年
