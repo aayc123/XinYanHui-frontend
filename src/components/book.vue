@@ -111,7 +111,7 @@ export default {
         this.WindowOpen = window.open(chatUrl, '_blank');
         this.agreeProtocol = false;
       } catch (error) {
-        console.error("获取session失败:", error);
+        //console.error("获取session失败:", error);
         this.$message.error("无法进入聊天，请稍后重试");
       }
     },

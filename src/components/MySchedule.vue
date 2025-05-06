@@ -74,7 +74,6 @@ export default {
   data() {
     return {
       isCalendarView: true,
-      currentMonth: new Date().getMonth() + 1,
       currentMonthName: new Intl.DateTimeFormat("zh-CN", { month: "long" }).format(new Date()),
       weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       monthDays: [],
@@ -83,7 +82,7 @@ export default {
       showLeaveModal: false,
       leaveReason: "",
       currentLeaveItem: null,
-      consultantId: '', // 这里一开始是空
+      consultantId: 0, // 这里一开始是空
       token:localStorage.getItem('token'),
       currentYear: new Date().getFullYear(),
       currentMonth: new Date().getMonth() + 1, // 注意：1~12 月
@@ -184,9 +183,9 @@ export default {
         return;
       }
       const timeStr = this.currentLeaveItem.time === '8' ? 'AM' : 'PM';
-      this.consultantId = localStorage.getItem('consultantId');
+      this.consultantId = localStorage.getItem("consultantId");
       this.$axios.post('http://localhost:8080/internal/consultant/leave', {
-        consultantId: this.consultantId,
+        consultantId: parseInt(this.consultantId, 10),
         date: this.currentLeaveItem.date,
         time: timeStr,
         cancellationReason: this.leaveReason
@@ -195,7 +194,7 @@ export default {
           token: this.token
         }
       }).then(response => {
-        if (response.data.code === 1) {
+        if (response.data.code === "1") {
           this.$message.success("请假申请已提交！");
           this.currentLeaveItem.leaveApplied = true;
         } else {
