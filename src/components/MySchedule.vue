@@ -47,49 +47,94 @@
 
     <!-- 列表视图 -->
     <div v-else  class="list-view">
-      <table>
-        <thead>
-          <tr>
-            <th>日期</th>
-            <th>时间</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="appointment in appointments" :key="appointment.appointmentId">
-            <td>{{ formatDate(appointment.appointmentDate) }}</td>
-            <td>{{ appointment.appointmentTime }}</td>
-            <td>
-              <span v-if="appointment.status === 'completed'" class="completed">已完成</span>
-              <span v-else-if="appointment.status === 'booked'" class="pending">未完成</span>
-            </td>
-            <td>
-              <button
-                v-if="appointment.status === 'booked'"
-                @click="openCancelModal(appointment.appointmentId)"
-              >
-                取消预约
-              </button>
-              <button
-                v-else-if="appointment.status === 'completed'"
-                @click="viewRecord(appointment)"
-              >
-                查看记录
-              </button>
-            </td>
-          </tr>
-        </tbody>
-       
-      </table>
+      <h2>会话记录</h2>
+       <!-- 筛选表单 -->
+    <el-form :inline="true" class="filter-form" style="margin-bottom: 16px;">
+      <el-form-item label="会话时间">
+        <el-date-picker
+          v-model="filterDate"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          style="background-color: #FFE4B5; 
+          color: #8B4513;"
+          @click="fetchSessions"
+        >
+          筛选
+        </el-button>
+      </el-form-item>
+    </el-form>
+      <div class="session-records">
+      <div class="session-card-container">
+        <div class="session-card" v-for="session in filteredSessions" :key="session.sessionId">
+          <div class="session-left">
+            <p><strong>{{ formatDate(session.startTime) }}</strong></p>
+            <p>{{ session.consultantName}}</p>
+          </div>
+          <div class="session-right">
+            <div class="rating">
+              <el-rate
+                v-if="session.rating !== null"
+                :value="session.rating"
+                disabled
+               
+              />
+
+            </div>
+            <p class="feedback">{{ session.feedback || "未填写评价" }}</p>
+          </div>
+          <div class="session-actions">
+            <el-button size="small" type="primary" 
+                       style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5;"
+                       @click="openDetailDialog(session.sessionId)">
+              咨询详情
+            </el-button>
+          </div>
+        </div>
+      </div>
+  
+      <!-- 咨询详情弹窗 -->
+      <el-dialog
+          :visible.sync="detailDialogVisible"
+          :show-close="false"
+          title="咨询详情"
+          width="50%"
+          class="custom-dialog"
+        >
+        <div class="chat-history">
+          <div 
+            v-for="msg in sessionHistory" 
+            :key="msg.time" 
+            :class="['chat-bubble', msg.senderType ? 'consultant' : 'user']"
+          >
+            <div class="chat-meta">
+              <span class="sender">{{ msg.senderType ? '咨询师' : '来访者' }}</span>
+              <span class="time">{{ formatTime(msg.time) }}</span>
+            </div>
+            <div class="chat-msg">{{ msg.msg }}</div>
+          </div>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+        <el-button
+          type="primary"
+          @click="detailDialogVisible = false"
+          style="background-color: #FFE4B5; color: #8B4513; border-color: #FFE4B5; border-radius: 6px;"
+        >
+          关闭
+        </el-button>
+      </div>
+
+      </el-dialog>
+
+    </div>
     </div>
 
-    <div v-if="showLeaveModal" class="modal">
-      <h3>取消预约</h3>
-      <textarea v-model="leaveReason" placeholder="请填写取消理由"></textarea>
-      <button @click="submitCancel">提交</button>
-      <button @click="closeCancelModal">取消</button>
-    </div>
+    
   </div>
 </template>
 
@@ -97,7 +142,9 @@
 export default {
   data() {
     return {
+      hoverCloseButton: false,
       userId: localStorage.getItem("userId"),
+      username: localStorage.getItem("username"),
       token: localStorage.getItem("token"),
       isCalendarView: true,
       currentMonth: new Date().getMonth() + 1,
@@ -112,13 +159,74 @@ export default {
       appointments: [],
       monthRange: [], // 用于存储过去三个月的日期数据
       selectedMonth: new Date().getMonth() + 1, // 当前月份
+      sessions:[],
+      sessionHistory: [], // 用于存储会话记录
+      detailDialogVisible: false,
+      filterDate: null,
     };
   },
   mounted() {
     this.generateMonth(); // 生成月份数据
     this.fetchAppointments();
+    this.fetchSessions();
+  },
+  computed:{
+    filteredSessions() {
+      return [...this.sessions].sort((a, b) => {
+        const aTime = new Date(`${a.startTime}`);
+        const bTime = new Date(`${b.startTime}`);
+        return bTime - aTime;
+      });
+    }
   },
   methods: {
+    async fetchSessions() {
+      try {
+        const params={ userId: localStorage.getItem("userId") };
+        if (this.filterDate && this.filterDate.length === 2) {
+          params.startDate = this.formatDate(this.filterDate[0]);
+          params.endDate = this.formatDate(this.filterDate[1]);
+        }
+        const res = await this.$axios.get("http://localhost:8080/user/session/list", {
+          headers: {
+            token:this.token, // 获取 JWT Token
+          },
+          params
+        });
+        if (res.data.code === "1") {
+          this.sessions = res.data.data;
+          this.sessions.sort((a, b) => {
+            // 假设字段名为 a.time，如果是别的名称改成对应字段
+            return new Date(b.startTime) - new Date(a.startTime);
+          });
+          
+        } else {
+          this.$message.error("获取会话列表失败：" + res.data.msg);
+        }
+      } catch (err) {
+        this.$message.error("请求错误：" + err);
+      }
+    },
+    openDetailDialog(sessionId) {
+      this.$axios.get("http://localhost:8080/user/session/history", {
+        headers: { token: this.token },
+        params: { sessionId: sessionId },
+      }).then(res => {
+        if (res.data.code === "1") {
+          this.sessionHistory = res.data.data;
+          this.detailDialogVisible = true;
+        }
+        else if (res.data.code === "2") {
+          this.$message(res.data.msg);
+        }
+        else {
+          this.$message.error("获取会话列表失败：" + res.data.msg);
+        }
+      }).catch(err => {
+        this.$message.error("请求错误：" + err);
+      });
+    },
+
     async fetchAppointments() {
       try {
         const response = await this.$axios.get("/user/appointments", {
@@ -139,6 +247,10 @@ export default {
       } finally {
         this.generateMonthData(this.selectedMonth);
       }
+    },
+    formatTime(time) {
+      const date = new Date(time);
+      return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
     },
 
     async generateMonth(){
@@ -213,10 +325,6 @@ export default {
       this.cancelAppointment(this.currentAppointmentId, this.leaveReason); // 提交取消请求
       this.closeCancelModal(); // 关闭模态框
     },
-    viewRecord(appointment) {
-      alert(`查看记录：${appointment.appointmentDate} ${appointment.appointmentTime}`);
-      // TODO: 跳转到详情页面或显示详细记录
-    },
     generateMonthData(date) {
       const year = 2025; // 固定为2025年
       const month = date-1; // 转换为0-11
@@ -244,9 +352,12 @@ export default {
       );
     },
     formatDate(date) {
-      const [year, month, day] = date.split("-");
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = (`0${d.getMonth() + 1}`).slice(-2);
+      const day = (`0${d.getDate()}`).slice(-2);
       return `${year}-${month}-${day}`;
-    },
+    }
   },
 };
 </script>
@@ -265,10 +376,23 @@ export default {
   border: 1px solid #7a3b10; 
   border-radius: 20px;
 }
+/* 如果你仅想让内容区不滚动穿透，可以这样写 */
+.custom-dialog /deep/ .el-dialog__body {
+  overflow: hidden;
+}
 
+.filter-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .header {
   text-align: right;
   margin-bottom: 10px;
+}
+.el-button:hover {
+  background-color: #fff5e0 !important; /* 比#FFE4B5更浅 */
+  color: #8B4513 !important;
 }
 
 button {
@@ -357,7 +481,61 @@ button {
   width: 100%;
   border-collapse: collapse;
 }
+.chat-history {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+}
 
+.chat-bubble {
+  max-width: 75%;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  word-wrap: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.consultant {
+  background-color: #fffbe6;
+  align-self: flex-start;
+  border: 1px solid #ffecb3;
+  border-top-left-radius: 0;
+}
+
+.user {
+  background-color: #e6f7ff;
+  align-self: flex-end;
+  margin-left: auto;
+  border: 1px solid #b3e5fc;
+  border-top-right-radius: 0;
+}
+
+.chat-meta {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.chat-msg {
+  white-space: pre-wrap;
+}
+
+.el-dialog__body {
+  padding-top: 10px;
+}
+
+.custom-dialog .el-dialog__header {
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 10px;
+}
 .list-view th,
 .list-view td {
   border: 1px solid #ccc;
@@ -411,4 +589,77 @@ button {
   border: none;
   cursor: pointer;
 }
+.session-records {
+    padding: 20px;
+  }
+  
+  .session-card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+  }
+  
+  .session-card {
+    background-color: white;
+    border: 1px solid #FFE4B5;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .session-left, .session-right {
+    width: 45%;
+  }
+  
+  .session-left p {
+    margin: 6px 0;
+    font-size: 14px;
+  }
+  
+  .session-right .rating {
+    margin-bottom: 8px;
+  }
+  
+  .feedback {
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .session-actions {
+    width: 100%;
+    margin-top: 10px;
+    text-align: right;
+  }
+  
+  .chat-history {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+  
+  .msg-user,
+  .msg-consultant {
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 6px;
+    background-color: #fef6e0;
+  }
+  
+  .msg-consultant {
+    background-color: #e0f7fa;
+  }
+  
+  .time {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+  }
 </style>

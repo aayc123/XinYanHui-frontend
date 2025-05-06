@@ -12,15 +12,49 @@
             <el-menu-item index="/cinema"  @click.native="handleClick">AI对话</el-menu-item>
             <el-menu-item index="/myfilm"  @click.native="handleClick">阅读天地</el-menu-item>
             <el-submenu index="user" class="user-menu">
-                <template slot="title">{{ User }}</template>
-                <el-menu-item @click="personalbar">个人主页</el-menu-item>
-                <el-menu-item @click="LogoutHeadle">退出</el-menu-item>
+            <template slot="title">
+                <div class="user-container">
+                <span>{{ User }}</span>
+                <span v-if="unread > 0" class="dot"></span> <!-- 用户名上的红点 -->
+                </div>
+            </template>
+            <el-menu-item @click="personalbar">
+                <span>
+                个人主页
+                <span v-if="unread > 0" class="dot-inline"></span> <!-- 菜单项里的红点 -->
+                </span>
+            </el-menu-item>
+            <el-menu-item @click="LogoutHeadle">退出</el-menu-item>
             </el-submenu>
         </el-menu>
     </div>
 </template>
 
 <style scoped lang="less">
+.user-container {
+  position: relative;
+  display: inline-block;
+}
+
+.dot {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  height: 8px;
+  width: 8px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+.dot-inline {
+  display: inline-block;
+  margin-left: 4px;
+  height: 8px;
+  width: 8px;
+  background-color: red;
+  border-radius: 50%;
+}
+
 .pic {
     margin-left: 200px;
     height:60px;
@@ -64,14 +98,31 @@
 </style>
 
 <script>
+import axios from "axios";
 export default {
     data(){
         return{
             activeMenu: "/",
-            User:localStorage.getItem('username')
+            User:localStorage.getItem('username'),
+            unread: 0,
         }
     },
+    mounted(){
+        this.count();
+    },
     methods: {
+        count() {
+            axios
+            .get("http://localhost:8080/user/notification/", {
+                headers: { token: this.token },
+                params: { userId: localStorage.getItem('userId') },
+            })
+            .then((res) => {
+                if (res.data.code === "1") {
+                this.unread = res.data.data;
+                }
+            });
+        },
         handleClick() {
             // 提示信息
             this.$message({

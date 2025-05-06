@@ -5,6 +5,8 @@ import ConsultantDetail from '@/components/ConsultantDetail.vue';
 import MySchedule from '../components/MySchedule.vue';
 import Chat from '../components/Chat.vue';
 import settings from '../components/settings.vue';
+import messages from '../components/messages.vue';
+import book from '../components/book.vue';
 //import { set } from 'core-js/core/dict';
 Vue.use(VueRouter);
 
@@ -42,6 +44,22 @@ const routes = [
                 path: 'schedule', // 我的咨询
                 name: 'Schedule',
                 component: MySchedule,
+                // meta: {
+                //     isLogin: true
+                // }
+            },
+            {
+                path: 'book', // 我的咨询
+                name: 'book',
+                component: book,
+                // meta: {
+                //     isLogin: true
+                // }
+            },
+            {
+                path: 'messages', // 消息中心
+                name: 'messages',
+                component: messages,
                 // meta: {
                 //     isLogin: true
                 // }

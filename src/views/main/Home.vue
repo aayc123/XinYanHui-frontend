@@ -86,8 +86,8 @@
           "
         >
           <div style="text-align: center; color: #666;">
-            <p style="font-size: 30px; margin-bottom: 10px;">当前咨询师已下班</p>
-            <p style="font-size: 30px;">上班时间为 8:00-17:00</p>
+            <p style="font-size: 30px; margin-bottom: 10px;">当前为休息时段</p>
+            <p style="font-size: 30px;">上班时间为 8:00-12:00 13:00-17:00</p>
           </div>
         </div>
       </div>
@@ -104,7 +104,11 @@
                 <span style="color: #fff; font-weight: 600;">最近预约</span>
               </div>
               <div class="meeting-roll" style="height:200px;overflow-y: hidden; display: flex; flex-direction: column;overflow-x: hidden;">
-              <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" style="width: 100%;flex:1" header-row-class-name="custom-header" height="100%">
+              <el-table :data="tableData.filter(item => item.status !== 'completed'&& item.status !== 'canceled')" 
+                style="width: 100%;flex:1" 
+                header-row-class-name="custom-header" 
+                height="100%"
+                :row-class-name="tableRowClassName">
                 <!-- 合并预约日期和时间 -->
                 <el-table-column label="预约时间" width="170" height="10%">
                   <template slot-scope="scope">
@@ -240,6 +244,11 @@ export default {
     this.fetchAppointments();
   },
   methods: {
+    tableRowClassName({ row }) {
+      return row.status === 'ready'
+        ? 'row-ready'   // 当 status === 'ready' 时，整行都会加上 .row-ready
+        : '';
+    },
     async generateDateOptions() {     
       const today = new Date(); // 固定为题目中的日期
       //this.dateOptions.push('现在在线');
@@ -373,7 +382,7 @@ export default {
         });
         if (res.data.code === "1") {
           const id=res.data.data.sessionId;
-          alert(id)
+          //alert(id)
           const chatUrl = this.$router.resolve({
             path: `/chat/${id}`,
             query: {
@@ -424,7 +433,7 @@ export default {
     },
     submitCancel() {
       if (!this.leaveReason.trim()) {
-        alert("请填写取消理由");
+        this.$message("请填写取消理由");
         return;
       }
       this.cancelAppointment(this.currentAppointmentId, this.leaveReason); // 提交取消请求
@@ -452,7 +461,15 @@ export default {
   background-color: #f5e7da !important;
   color: #5c3317 !important;
 }
+/* 针对“ready”状态行的背景色 */
+.row-ready .el-table__row {
+  background-color: #FFE4B5 !important;
+}
 
+/* 如果以上选择器不起作用，可以更强力一些： */
+.row-ready > td {
+  background-color: #FFE4B5 !important;
+}
 /* 调整按钮颜色 */
 .el-button--text {
   color: #8B4513;

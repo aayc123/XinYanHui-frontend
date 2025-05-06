@@ -22,12 +22,12 @@ export default {
   },
   data() {
     return {
-      currentTab: "schedule"
+      currentTab: "book"
     };
   },
   mounted(){
-    this.handleMenuChange('schedule')
-    this.$router.replace({ path: '/userHome/schedule' }) // 默认加载日程
+    this.handleMenuChange('book')
+    this.$router.replace({ path: '/userHome/book' }) // 默认加载日程
   },
   methods: {
     handleMenuChange(tab) {

@@ -11,6 +11,7 @@
           :session-id="sessionId"
           @time-up="handleTimeUp"
           @tick="handleTick" 
+          :is-active="sessionStarted"
         />
       </div>
       <button class="end-session-btn" @click="showConfirm = true">
@@ -19,7 +20,7 @@
     </header>
 
     <!-- 主聊天区域 -->
-    <ChatContainer :messages="messages" class="main-chat" />
+    <ChatContainer ref="chatScroll"  :messages="messages" class="main-chat" />
     <!-- 消息输入区 -->
     <ChatMessages @send-message="addMessage" />
 
@@ -61,7 +62,6 @@
         ></textarea>
         <div class="dialog-btns">
           <button @click="submitRating">提交</button>
-          <button @click="showRatingDialog = false">取消</button>
         </div>
       </div>
     </div>
@@ -84,6 +84,8 @@ export default {
   },
   data() {
     return {
+      sessionStarted: false,
+      sessionEnded: false,
       messages: [],
       chatHistory: [],
       sidebarVisible: false,
@@ -112,7 +114,12 @@ export default {
   watch: {
     sessionId() {
       this.initializeWebSocket()
-    }
+    },
+    messages() {
+    this.$nextTick(() => {
+      this.scrollToBottom()
+    })
+  }
   },
   created() {
     this.sessionId       = parseInt(this.$route.query.sessionId,10)
@@ -127,6 +134,15 @@ export default {
     window.removeEventListener('beforeunload', this.confirmBeforeUnload)
   },
   methods: {
+    scrollToBottom: function () {
+      // 兼容不支持可选链的写法
+      var chatScroll = this.$refs.chatScroll;
+      var container = chatScroll && chatScroll.$el ? chatScroll.$el : chatScroll;
+      if (container) {
+        // 如果 ChatContainer 最外层就是滚动元素
+        container.scrollTop = container.scrollHeight;
+      }
+    },
     async initializeWebSocket() {
       this.cleanupWebSocket()
       
@@ -149,6 +165,7 @@ export default {
       this.ws.onmessage = (event) => {
         //alert('onmessage')
         const response = JSON.parse(event.data)
+
         this.handleIncomingMessage(response)
       }
 
@@ -179,13 +196,22 @@ export default {
 
     handleIncomingMessage(response) {
       const newMessage = {
-        from: response.system? 'system' : 'consultant',
+        from: response.system ? 'system' : 'consultant',
         text: response.msg,
         time: dayjs(response.time).format('HH:mm:ss'),
         status: 'received'
       }
-      //alert(response.system)
+
       this.messages.push(newMessage)
+
+      if (newMessage.text === '会话已开始') {
+        this.sessionStarted = true
+      } else if (newMessage.text === '会话已结束') {
+        alert("咨询师已结束会话！")
+        this.sessionEnded = true
+        // 自动显示评分弹窗
+        this.showRatingDialog = true
+      }
     },
 
     async addMessage(content) {
@@ -260,9 +286,39 @@ export default {
       this.rating = n
     },
 
+    
     submitRating() {
-      // 这里添加提交评分到后端的逻辑
-      //console.log('提交评分:', this.rating, '评价:', this.feedback)
+      const token = localStorage.getItem('token')
+      const payload = {
+        sessionId: this.sessionId,
+        rate: this.rating||0,
+        feedback: (this.feedback||"").trim()
+      }
+      if(this.rating>0){
+        fetch('http://localhost:8080/user/session/evaluate', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'token': token
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('提交评分失败')
+        }
+        return response.json()
+      })
+      .then(data => {
+        this.$message('评分提交成功:', data)
+        this.cleanupSession()
+      })
+      .catch(error => {
+        this.$message.error('提交评分失败，请稍后再试',error)
+        //console.error(error)
+      })
+      }
+      
       this.cleanupSession()
     },
 
@@ -286,6 +342,7 @@ export default {
   flex-direction: column;
   height: 100vh;
   position: relative;
+  padding-bottom:30px;
 }
 
 .chat-header {

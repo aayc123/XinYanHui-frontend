@@ -47,16 +47,6 @@
                 <button @click="switchToRegister" class="remind">没有账号？点此注册</button>
                 <button class="forget">忘记密码</button>
             </div>
-            <!-- <div v-else>
-                <h1 style="margin-top:230px;">开始使用</h1>
-                <div class="choice">
-                    <button class="btn1" @click="switchToLogin">登录</button>
-                    <button class="btn2" @click="switchToRegister">注册</button>
-                </div>
-                <div class="pic" style="width:80%">
-                    <img src="../assets/icon.png" alt="icon" style="position:fixed;bottom:0;margin-right:10px;width:150px; height: 100px;"/> 
-                </div>
-            </div> -->
             
         </div>
     </div>
@@ -237,12 +227,12 @@ export default {
                                 this.$router.push('/home');
                             }
                             else{
-                                alert(response.data.msg); // 显示后端返回的错误消息
+                                this.$message.error(response.data.msg); // 显示后端返回的错误消息
                             }
                         })
                         .catch(error => {
                         // 请求失败时的处理逻辑
-                            alert('登录失败!');
+                        this.$message.error('登录失败!');
                         });
                         console.log(this.loginForm);
                     }
@@ -253,18 +243,18 @@ export default {
                         console.log(response);
                         if(response.data.code==="1"){
                             console.log('Response data:', response.data);
-                            alert('注册成功，请登录！');
+                            this.$message.error('注册成功，请登录！');
                             this.clearRegisterForm(); // 清空注册表单数据
                             this.$router.push('/login'); // 跳转到登录页面
                             this.switchToLogin(); // 切换到登录表单
                         }
                         else{
-                            alert('用户名重复！请重新注册'); // 显示后端返回的错误消息
+                            this.$message.error('用户名重复！请重新注册'); // 显示后端返回的错误消息
                         }
                         })
                         .catch(error => {
                             // 请求失败时的处理逻辑
-                            alert('注册失败!请检查网络连接');
+                            this.$message.error('注册失败!请检查网络连接');
                         });
 
                     }

@@ -39,9 +39,9 @@
     data() {
       return {
         user: {
-          phone: '13800138000',
-          email: 'user@example.com',
-          username: 'user123',
+          phone: '15355464223',
+          email: '2803023760@qq.com',
+          username: localStorage.getItem('username') || '用户',
         },
         password: '',
         editMode: {
